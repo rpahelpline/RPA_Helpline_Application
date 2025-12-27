@@ -8,15 +8,15 @@ class ErrorBoundary extends Component {
     this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
     this.setState({
-      error,
-      errorInfo,
+      error: error,
+      errorInfo: errorInfo,
     });
   }
 
@@ -39,7 +39,7 @@ class ErrorBoundary extends Component {
             <p className="text-gray-400 mb-6 font-mono">
               An unexpected error has occurred. Our systems are working to resolve this issue.
             </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <div className="mb-6 p-4 bg-dark-bg border border-dark-border rounded text-left">
                 <p className="text-primary-red font-mono text-sm mb-2">
                   {this.state.error.toString()}

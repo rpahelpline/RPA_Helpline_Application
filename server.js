@@ -10,7 +10,7 @@ const port = parseInt(process.env.PORT || '4173');
 const host = '0.0.0.0';
 
 try {
-  const server = await preview({
+  await preview({
     build: {
       outDir: resolve(__dirname, 'dist'),
     },

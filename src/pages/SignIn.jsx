@@ -59,7 +59,7 @@ export const SignIn = () => {
       
       toast.success('Signed in successfully!');
       navigate('/dashboard');
-    } catch (error) {
+    } catch {
       toast.error('Sign in failed. Please check your credentials.');
     } finally {
       setLoading(false);

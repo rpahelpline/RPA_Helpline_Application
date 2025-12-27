@@ -11,10 +11,6 @@
 
 export const SEO = ({
   title = 'RPA Helpline - Robotic Process Automation Services',
-  description = 'Connect with elite RPA developers, freelancers, and trainers. Find automation projects, hire talent, and accelerate your business processes.',
-  keywords = 'RPA, Robotic Process Automation, Automation Developers, RPA Freelancers, Automation Training',
-  image = '/og-image.png',
-  url = '',
 }) => {
   // Update document title
   if (typeof document !== 'undefined') {

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import Toast from './Toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
+// eslint-disable-next-line react-refresh/only-export-components
 const useToastStore = create((set) => ({
   toasts: [],
   addToast: (toast) => {

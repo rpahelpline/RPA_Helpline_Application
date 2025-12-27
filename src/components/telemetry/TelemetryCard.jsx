@@ -2,7 +2,7 @@ import { Card } from '../ui/Card';
 import { useCounter } from '../../hooks/useCounter';
 import { motion } from 'framer-motion';
 
-export const TelemetryCard = ({ icon: Icon, label, value, suffix = '', delay = 0 }) => {
+export const TelemetryCard = ({ label, value, suffix = '', delay = 0 }) => {
   const { count } = useCounter(value, 2000, true);
 
   return (

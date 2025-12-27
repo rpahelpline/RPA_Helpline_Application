@@ -33,49 +33,58 @@ export const HowItWorks = () => {
   return (
     <Container className="py-20">
       <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold text-white mb-4">How It Works</h1>
-        <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+        <p className="text-primary-blue font-mono uppercase tracking-wider text-sm mb-2">
+          // OPERATIONAL PROTOCOL
+        </p>
+        <h1 className="text-5xl font-black text-white mb-4 font-display uppercase tracking-tight">
+          <span className="text-white">HOW IT</span>{' '}
+          <span className="text-primary-red">WORKS</span>
+        </h1>
+        <p className="text-gray-300 font-mono text-lg max-w-2xl mx-auto mt-4">
           Simple, fast, and efficient. Get your RPA projects off the ground in minutes.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-        {steps.map((step, index) => (
-          <Card key={index} variant="elevated" className="text-center">
-            <div className={`text-${step.color} mb-4 text-4xl flex justify-center`}>
-              <step.icon />
-            </div>
-            <div className="text-2xl font-bold text-white mb-2">{index + 1}</div>
-            <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
-            <p className="text-gray-400">{step.description}</p>
-          </Card>
-        ))}
+        {steps.map((step, index) => {
+          const Icon = step.icon;
+          return (
+            <Card key={index} variant="elevated" className="text-center bg-dark-surface/80 backdrop-blur-sm">
+              <div className="text-primary-blue mb-4 text-4xl flex justify-center">
+                <Icon />
+              </div>
+              <div className="text-2xl font-black text-white mb-2 font-display">{index + 1}</div>
+              <h3 className="text-xl font-black text-white mb-3 font-display uppercase">{step.title}</h3>
+              <p className="text-gray-300 font-mono text-sm">{step.description}</p>
+            </Card>
+          );
+        })}
       </div>
 
-      <Card variant="elevated" className="max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold text-white mb-6">Why Choose RPA Helpline?</h2>
+      <Card variant="elevated" className="max-w-4xl mx-auto bg-dark-surface/80 backdrop-blur-sm">
+        <h2 className="text-3xl font-black text-white mb-6 font-display uppercase">WHY CHOOSE RPA HELPLINE?</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h3 className="text-xl font-semibold text-primary-blue mb-2">Expert Talent Pool</h3>
-            <p className="text-gray-400">
+            <h3 className="text-xl font-black text-primary-blue mb-2 font-display uppercase">EXPERT TALENT POOL</h3>
+            <p className="text-gray-300 font-mono text-sm">
               Access to certified RPA developers, freelancers, and trainers with proven track records.
             </p>
           </div>
           <div>
-            <h3 className="text-xl font-semibold text-primary-blue mb-2">Fast Matching</h3>
-            <p className="text-gray-400">
+            <h3 className="text-xl font-black text-primary-blue mb-2 font-display uppercase">FAST MATCHING</h3>
+            <p className="text-gray-300 font-mono text-sm">
               Our AI-powered system connects you with the right talent in minutes, not days.
             </p>
           </div>
           <div>
-            <h3 className="text-xl font-semibold text-primary-blue mb-2">24/7 Support</h3>
-            <p className="text-gray-400">
+            <h3 className="text-xl font-black text-primary-blue mb-2 font-display uppercase">24/7 SUPPORT</h3>
+            <p className="text-gray-300 font-mono text-sm">
               Round-the-clock assistance to ensure your projects run smoothly from start to finish.
             </p>
           </div>
           <div>
-            <h3 className="text-xl font-semibold text-primary-blue mb-2">Transparent Process</h3>
-            <p className="text-gray-400">
+            <h3 className="text-xl font-black text-primary-blue mb-2 font-display uppercase">TRANSPARENT PROCESS</h3>
+            <p className="text-gray-300 font-mono text-sm">
               Clear communication, detailed profiles, and honest reviews help you make informed decisions.
             </p>
           </div>

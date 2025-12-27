@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getMockData, addMockData, updateMockData, saveMockData } from '../mock/data';
+import { getMockData, addMockData, updateMockData } from '../mock/data';
 
 export const useProjectStore = create((set) => {
   // Initialize projects from localStorage

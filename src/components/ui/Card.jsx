@@ -7,8 +7,8 @@ export const Card = ({
   ...props
 }) => {
   const variants = {
-    default: 'bg-dark-surface border border-dark-border',
-    elevated: 'bg-dark-surface border border-dark-border shadow-lg shadow-black/20',
+    default: 'bg-dark-surface/80 backdrop-blur-sm border border-dark-border',
+    elevated: 'bg-dark-surface/80 backdrop-blur-sm border border-dark-border shadow-lg shadow-black/20',
     outline: 'bg-transparent border border-primary-blue/20',
     terminal: 'bg-dark-bg border border-primary-blue/30 font-mono',
   };

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import clsx from 'clsx';
 
 export const Input = ({
@@ -7,7 +8,7 @@ export const Input = ({
   id,
   ...props
 }) => {
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+  const [inputId] = useState(() => id || `input-${crypto.randomUUID()}`);
   
   return (
     <div className="w-full">

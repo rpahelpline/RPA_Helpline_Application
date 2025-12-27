@@ -29,7 +29,7 @@ export const ProjectDetail = () => {
           toast.error('Project not found');
           navigate('/projects');
         }
-      } catch (error) {
+      } catch {
         toast.error('Failed to load project');
         navigate('/projects');
       } finally {
@@ -97,10 +97,12 @@ export const ProjectDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <Card variant="elevated">
+            <Card variant="elevated" className="bg-dark-surface/80 backdrop-blur-sm">
               <div className="flex justify-between items-start mb-4">
-                <h1 className="text-3xl font-bold text-white">{project.title}</h1>
-                <Badge variant={getUrgencyColor(project.urgency)}>{project.urgency}</Badge>
+                <h1 className="text-3xl font-black text-white font-display">{project.title}</h1>
+                <Badge variant={getUrgencyColor(project.urgency)} className="font-mono uppercase">
+                  {project.urgency}
+                </Badge>
               </div>
 
               <div className="flex flex-wrap gap-4 mb-6 text-sm">
@@ -119,23 +121,23 @@ export const ProjectDetail = () => {
               </div>
 
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-white mb-3">Description</h2>
-                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                <h2 className="text-xl font-black text-white mb-3 font-display uppercase">DESCRIPTION</h2>
+                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap font-mono text-sm">
                   {project.description}
                 </p>
               </div>
 
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-white mb-3">Automation Type</h2>
-                <Badge variant="info" className="text-lg px-4 py-2">
+                <h2 className="text-xl font-black text-white mb-3 font-display uppercase">AUTOMATION TYPE</h2>
+                <Badge variant="info" className="text-lg px-4 py-2 font-mono uppercase">
                   {project.automationType}
                 </Badge>
               </div>
 
               {project.requirements && (
                 <div>
-                  <h2 className="text-xl font-bold text-white mb-3">Requirements</h2>
-                  <ul className="list-disc list-inside text-gray-300 space-y-2">
+                  <h2 className="text-xl font-black text-white mb-3 font-display uppercase">REQUIREMENTS</h2>
+                  <ul className="list-disc list-inside text-gray-300 space-y-2 font-mono text-sm">
                     {project.requirements.map((req, index) => (
                       <li key={index}>{req}</li>
                     ))}
@@ -147,8 +149,8 @@ export const ProjectDetail = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <Card variant="elevated">
-              <h3 className="text-xl font-bold text-white mb-4">Project Details</h3>
+            <Card variant="elevated" className="bg-dark-surface/80 backdrop-blur-sm">
+              <h3 className="text-xl font-black text-white mb-4 font-display uppercase">PROJECT DETAILS</h3>
               <div className="space-y-4">
                 <div>
                   <p className="text-gray-400 text-sm mb-1">Status</p>
@@ -172,15 +174,15 @@ export const ProjectDetail = () => {
             </Card>
 
             {project.status === 'open' && (
-              <Card variant="elevated">
+              <Card variant="elevated" className="bg-dark-surface/80 backdrop-blur-sm">
                 <Button
                   variant="primary"
                   size="lg"
-                  className="w-full font-mono uppercase tracking-wider"
+                  className="w-full"
                   onClick={handleApply}
                 >
                   <FaCheckCircle className="mr-2" />
-                  Apply to Project
+                  APPLY TO PROJECT
                 </Button>
                 {!isAuthenticated && (
                   <p className="text-gray-400 text-sm mt-3 text-center">

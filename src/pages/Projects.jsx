@@ -14,10 +14,10 @@ import { FaClock, FaDollarSign, FaIndustry, FaSearch, FaFilter } from 'react-ico
 export const Projects = () => {
   const { projects, loadProjects } = useProjectStore();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterUrgency, setFilterUrgency] = useState('all');
-  const [filterIndustry, setFilterIndustry] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm] = useState('');
+  const [filterUrgency] = useState('all');
+  const [filterIndustry] = useState('all');
+  const [filterStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
@@ -34,21 +34,6 @@ export const Projects = () => {
     load();
   }, [loadProjects]);
 
-  const getUrgencyColor = (urgency) => {
-    switch (urgency?.toUpperCase()) {
-      case 'CRITICAL':
-        return 'danger'; // Red
-      case 'HIGH':
-        return 'warning'; // Yellow
-      case 'MEDIUM':
-        return 'info'; // Blue
-      case 'LOW':
-        return 'default'; // Dark blue/gray
-      default:
-        return 'default';
-    }
-  };
-
   const getUrgencyBgColor = (urgency) => {
     switch (urgency?.toUpperCase()) {
       case 'CRITICAL':
@@ -64,11 +49,6 @@ export const Projects = () => {
     }
   };
 
-  // Get unique industries for filter
-  const industries = useMemo(() => {
-    const unique = [...new Set(projects.map((p) => p.industry))];
-    return unique.filter(Boolean).sort();
-  }, [projects]);
 
   // Filter and search projects
   const filteredProjects = useMemo(() => {
@@ -97,16 +77,13 @@ export const Projects = () => {
     return filteredProjects.slice(start, start + itemsPerPage);
   }, [filteredProjects, currentPage, showAll]);
 
+  // Reset to page 1 when filters change
   useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, filterUrgency, filterIndustry, filterStatus]);
-
-  const handleResetFilters = () => {
-    setSearchTerm('');
-    setFilterUrgency('all');
-    setFilterIndustry('all');
-    setFilterStatus('all');
-  };
+    if (currentPage !== 1) {
+      // Use setTimeout to avoid synchronous setState
+      setTimeout(() => setCurrentPage(1), 0);
+    }
+  }, [debouncedSearch, filterUrgency, filterIndustry, filterStatus, currentPage]);
 
   if (loading) {
     return (

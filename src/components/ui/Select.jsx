@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import clsx from 'clsx';
 
 export const Select = ({
@@ -9,7 +10,7 @@ export const Select = ({
   options,
   ...props
 }) => {
-  const inputId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
+  const [inputId] = useState(() => id || `select-${crypto.randomUUID()}`);
   
   return (
     <div className="w-full">

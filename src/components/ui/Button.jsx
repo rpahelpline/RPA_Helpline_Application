@@ -10,7 +10,7 @@ export const Button = ({
   type = 'button',
   ...props
 }) => {
-  const baseStyles = 'font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-bg disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-bg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider';
   
   const variants = {
     primary: 'bg-primary-red text-white hover:bg-primary-red/90 focus:ring-primary-red border border-primary-red shadow-[0_0_10px_rgba(255,51,51,0.3)]',

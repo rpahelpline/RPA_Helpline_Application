@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Container } from '../components/layout/Container';
-import { Button } from '../components/ui/Button';
+import { Container } from '../layout/Container';
+import { Button } from '../ui/Button';
 import { FaBullseye, FaCog, FaRocket } from 'react-icons/fa';
 
 export const ProjectLifecycle = () => {
