@@ -20,6 +20,7 @@ export const Projects = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
   const itemsPerPage = 6;
 
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -34,15 +35,32 @@ export const Projects = () => {
   }, [loadProjects]);
 
   const getUrgencyColor = (urgency) => {
-    switch (urgency?.toLowerCase()) {
-      case 'critical':
-        return 'danger';
-      case 'high':
-        return 'danger';
-      case 'medium':
-        return 'warning';
+    switch (urgency?.toUpperCase()) {
+      case 'CRITICAL':
+        return 'danger'; // Red
+      case 'HIGH':
+        return 'warning'; // Yellow
+      case 'MEDIUM':
+        return 'info'; // Blue
+      case 'LOW':
+        return 'default'; // Dark blue/gray
       default:
         return 'default';
+    }
+  };
+
+  const getUrgencyBgColor = (urgency) => {
+    switch (urgency?.toUpperCase()) {
+      case 'CRITICAL':
+        return 'bg-primary-red';
+      case 'HIGH':
+        return 'bg-accent-yellow';
+      case 'MEDIUM':
+        return 'bg-primary-blue';
+      case 'LOW':
+        return 'bg-gray-600';
+      default:
+        return 'bg-gray-600';
     }
   };
 
@@ -72,9 +90,12 @@ export const Projects = () => {
   // Pagination
   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
   const paginatedProjects = useMemo(() => {
+    if (showAll) {
+      return filteredProjects;
+    }
     const start = (currentPage - 1) * itemsPerPage;
     return filteredProjects.slice(start, start + itemsPerPage);
-  }, [filteredProjects, currentPage]);
+  }, [filteredProjects, currentPage, showAll]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -106,92 +127,37 @@ export const Projects = () => {
 
   return (
     <Container className="py-12">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4">Available Projects</h1>
-        <p className="text-gray-400">Browse and apply to automation projects</p>
+      {/* Header matching the image */}
+      <div className="mb-12">
+        <p className="text-primary-blue font-mono uppercase tracking-wider text-sm mb-2">
+          // ACTIVE ASSIGNMENTS
+        </p>
+        <h1 className="text-6xl font-black text-white mb-4 font-display uppercase tracking-tight">
+          <span className="text-white">MISSION</span>{' '}
+          <span className="text-primary-red">BRIEFINGS</span>
+        </h1>
       </div>
 
-      {/* Search and Filters */}
+      {/* Optional: Collapsible Search and Filters - Hidden by default to match image */}
+      {/* Uncomment to enable search/filter functionality */}
+      {/* 
       <Card variant="elevated" className="mb-6">
         <div className="space-y-4">
-          {/* Search Bar */}
           <div className="relative">
             <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search projects by title, description, or type..."
+              placeholder="Search projects..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-3 bg-dark-bg border border-primary-blue/30 rounded-lg text-white placeholder-gray-500 font-mono tracking-wide focus:outline-none focus:border-primary-blue focus:ring-1 focus:ring-primary-blue"
             />
           </div>
-
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-white font-mono uppercase tracking-wider text-xs mb-2">
-                <FaFilter className="inline mr-1" />
-                URGENCY
-              </label>
-              <Select
-                value={filterUrgency}
-                onChange={(e) => setFilterUrgency(e.target.value)}
-                options={[
-                  { value: 'all', label: 'All Urgencies' },
-                  { value: 'critical', label: 'Critical' },
-                  { value: 'high', label: 'High' },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'low', label: 'Low' },
-                ]}
-              />
-            </div>
-            <div>
-              <label className="block text-white font-mono uppercase tracking-wider text-xs mb-2">
-                INDUSTRY
-              </label>
-              <Select
-                value={filterIndustry}
-                onChange={(e) => setFilterIndustry(e.target.value)}
-                options={[
-                  { value: 'all', label: 'All Industries' },
-                  ...industries.map((ind) => ({ value: ind, label: ind })),
-                ]}
-              />
-            </div>
-            <div>
-              <label className="block text-white font-mono uppercase tracking-wider text-xs mb-2">
-                STATUS
-              </label>
-              <Select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                options={[
-                  { value: 'all', label: 'All Statuses' },
-                  { value: 'open', label: 'Open' },
-                  { value: 'in-progress', label: 'In Progress' },
-                  { value: 'closed', label: 'Closed' },
-                ]}
-              />
-            </div>
-            <div className="flex items-end">
-              <Button
-                variant="ghost"
-                onClick={handleResetFilters}
-                className="w-full font-mono uppercase tracking-wider"
-              >
-                Reset Filters
-              </Button>
-            </div>
-          </div>
         </div>
       </Card>
+      */}
 
-      {/* Results Count */}
-      <div className="mb-4 text-gray-400 font-mono text-sm">
-        Showing {paginatedProjects.length} of {filteredProjects.length} projects
-      </div>
-
-      {/* Projects Grid */}
+      {/* Projects Grid - Matching image design */}
       {filteredProjects.length === 0 ? (
         <Card>
           <p className="text-gray-400 text-center py-8">
@@ -202,52 +168,61 @@ export const Projects = () => {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {paginatedProjects.map((project) => (
               <Card
                 key={project.id}
                 variant="elevated"
-                className="hover:border-primary-blue/50 transition-colors cursor-pointer"
+                className="hover:border-primary-blue/50 transition-colors cursor-pointer bg-dark-surface/80 backdrop-blur-sm"
                 onClick={() => navigate(`/projects/${project.id}`)}
               >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-bold text-white">{project.title}</h3>
-                  <Badge variant={getUrgencyColor(project.urgency)}>{project.urgency}</Badge>
+                {/* Job Title */}
+                <h3 className="text-xl font-bold text-white mb-3 font-display">
+                  {project.title}
+                </h3>
+
+                {/* Company */}
+                <p className="text-gray-300 font-mono text-sm mb-3">
+                  {project.company || 'Company Name'}
+                </p>
+
+                {/* Location and Type */}
+                <div className="flex flex-wrap gap-2 mb-3 text-xs font-mono text-gray-400">
+                  <span>{project.location || 'Location'}</span>
+                  <span className="text-primary-blue">•</span>
+                  <span>{project.type || 'Type'}</span>
                 </div>
 
-                <p className="text-gray-400 mb-4 line-clamp-3">{project.description}</p>
+                {/* Salary */}
+                <p className="text-white font-semibold mb-4 font-mono">
+                  {project.salary || project.budget || 'Salary not specified'}
+                </p>
 
-                <div className="flex flex-wrap gap-4 mb-4 text-sm">
-                  <div className="flex items-center text-gray-400">
-                    <FaIndustry className="mr-2 text-primary-blue" />
-                    {project.industry}
-                  </div>
-                  <div className="flex items-center text-gray-400">
-                    <FaClock className="mr-2 text-primary-blue" />
-                    {project.timeline}
-                  </div>
-                  <div className="flex items-center text-gray-400">
-                    <FaDollarSign className="mr-2 text-primary-blue" />
-                    {project.budget}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Badge variant="info">{project.automationType}</Badge>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/projects/${project.id}`);
-                    }}
+                {/* Urgency Badge */}
+                <div className="flex justify-end">
+                  <span
+                    className={`${getUrgencyBgColor(project.urgency)} text-dark-bg px-3 py-1 rounded font-mono uppercase text-xs font-bold`}
                   >
-                    View Details
-                  </Button>
+                    {project.urgency || 'MEDIUM'}
+                  </span>
                 </div>
               </Card>
             ))}
           </div>
+
+          {/* View All Missions Button */}
+          {!showAll && filteredProjects.length > itemsPerPage && (
+            <div className="text-center mb-6">
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => setShowAll(true)}
+                className="font-mono uppercase tracking-wider border border-primary-blue/30 hover:border-primary-blue"
+              >
+                VIEW ALL MISSIONS →
+              </Button>
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (

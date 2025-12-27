@@ -25,7 +25,7 @@ export const LoadingSpinner = ({ size = 'md', className }) => {
 
 export const LoadingOverlay = ({ message = 'Loading...' }) => {
   return (
-    <div className="fixed inset-0 bg-dark-bg/80 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-dark-bg/80 backdrop-blur-sm bg-starfield z-50 flex items-center justify-center">
       <div className="text-center">
         <LoadingSpinner size="xl" className="mb-4" />
         <p className="text-white font-mono uppercase tracking-wider">{message}</p>

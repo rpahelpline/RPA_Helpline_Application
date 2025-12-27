@@ -12,6 +12,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: process.env.PORT || 4173,
     strictPort: true,
+    allowedHosts: [
+      'rpa-helpline-application.onrender.com',
+      '.onrender.com',
+      'localhost',
+      '127.0.0.1',
+    ],
   },
   build: {
     outDir: 'dist',

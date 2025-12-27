@@ -18,6 +18,12 @@ try {
       port: port,
       host: host,
       strictPort: false,
+      allowedHosts: [
+        'rpa-helpline-application.onrender.com',
+        '.onrender.com',
+        'localhost',
+        '127.0.0.1',
+      ],
     },
   });
 

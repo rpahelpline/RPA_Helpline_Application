@@ -11,6 +11,44 @@
     @apply bg-dark-bg text-white font-sans antialiased;
     margin: 0;
     padding: 0;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        transparent 1px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.15) 3px
+      );
+    pointer-events: none;
+    z-index: 9999;
+    animation: scanline 8s linear infinite;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.15) 1px, transparent 0),
+      radial-gradient(circle at 1px 1px, rgba(77, 166, 255, 0.1) 1px, transparent 0);
+    background-size: 200px 200px, 100px 100px;
+    background-position: 0 0, 50px 50px;
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0.6;
   }
 
   html {
@@ -18,14 +56,61 @@
   }
 }
 
+@keyframes scanline {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(4px);
+  }
+}
+
 @layer utilities {
   .bg-starfield {
     background-color: #0a0a0a;
     background-image: 
-      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0px, transparent 1px, transparent 2px, rgba(255, 255, 255, 0.03) 3px),
-      radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.15) 1px, transparent 0);
-    background-size: 100% 4px, 200px 200px;
-    background-position: 0 0, 0 0;
+      repeating-linear-gradient(
+        0deg,
+        rgba(255, 255, 255, 0.03) 0px,
+        transparent 1px,
+        transparent 2px,
+        rgba(255, 255, 255, 0.03) 3px
+      ),
+      radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.15) 1px, transparent 0),
+      radial-gradient(circle at 1px 1px, rgba(77, 166, 255, 0.08) 1px, transparent 0);
+    background-size: 100% 4px, 200px 200px, 100px 100px;
+    background-position: 0 0, 0 0, 50px 50px;
+    position: relative;
+  }
+
+  .bg-starfield::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.1) 0px,
+        transparent 1px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 3px
+      );
+    pointer-events: none;
+    animation: scanline 8s linear infinite;
+  }
+
+  .crt-flicker {
+    animation: flicker 0.15s infinite;
+  }
+
+  .crt-glow {
+    box-shadow: 
+      0 0 5px rgba(77, 166, 255, 0.2),
+      0 0 10px rgba(77, 166, 255, 0.1),
+      0 0 15px rgba(77, 166, 255, 0.05);
   }
 
   .corner-brackets {
@@ -83,5 +168,37 @@
   .scrollbar-custom::-webkit-scrollbar-thumb:hover {
     background: #252530;
   }
+}
+
+@keyframes flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.98;
+  }
+}
+
+/* CRT Screen Effect - Subtle overlay for all pages */
+.crt-screen {
+  position: relative;
+}
+
+.crt-screen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(
+      transparent 50%,
+      rgba(0, 0, 0, 0.03) 50%
+    );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 1;
+  animation: scanline 8s linear infinite;
 }
 

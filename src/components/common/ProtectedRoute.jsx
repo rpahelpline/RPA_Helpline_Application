@@ -9,7 +9,7 @@ export const ProtectedRoute = ({ children, allowedRoles = null }) => {
   // Show loading state while checking auth
   if (isAuthenticated === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-dark-bg">
+      <div className="min-h-screen flex items-center justify-center bg-dark-bg bg-starfield">
         <LoadingSpinner size="xl" />
       </div>
     );
