@@ -30,14 +30,14 @@ export const TelemetrySection = () => {
   ];
 
   return (
-    <section className="py-20">
+    <section className="py-12 sm:py-16 md:py-20 w-full overflow-x-hidden">
       <Container>
-        <div className="border-2 border-t-primary-red border-r-primary-red border-b-primary-blue border-l-primary-blue bg-dark-surface p-8">
-          <div className="flex items-center gap-2 mb-8">
-            <FaWaveSquare className="text-primary-blue" />
-            <h2 className="text-white text-sm font-mono uppercase tracking-wide">LIVE TELEMETRY DATA</h2>
+        <div className="border-2 border-t-primary-red border-r-primary-red border-b-primary-blue border-l-primary-blue bg-dark-surface p-4 sm:p-6 md:p-8 w-full">
+          <div className="flex items-center gap-2 mb-6 sm:mb-8">
+            <FaWaveSquare className="text-primary-blue text-sm sm:text-base" />
+            <h2 className="text-white text-xs sm:text-sm font-mono uppercase tracking-wide">LIVE TELEMETRY DATA</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {metrics.map((metric, index) => (
               <TelemetryCard key={index} {...metric} />
             ))}

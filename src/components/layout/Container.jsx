@@ -12,10 +12,12 @@ export const Container = ({ children, className, size = 'default', ...props }) =
   return (
     <div
       className={clsx(
-        'mx-auto px-4 sm:px-6 lg:px-8',
+        'mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12',
         sizes[size],
+        'box-border',
         className
       )}
+      style={{ maxWidth: '100%' }}
       {...props}
     >
       {children}

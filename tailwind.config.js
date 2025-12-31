@@ -6,12 +6,21 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '375px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+        '3xl': '1920px',
+      },
       colors: {
         'primary-red': '#ff3333',
         'primary-blue': '#4da6ff',
         'accent-yellow': '#ffd700',
         'status-green': '#00ff00',
-        'dark-bg': '#0a0a0a',
+        'dark-bg': '#000000',
         'dark-surface': '#111111',
         'dark-border': '#333333',
       },

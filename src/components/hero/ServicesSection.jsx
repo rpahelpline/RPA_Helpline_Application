@@ -45,19 +45,19 @@ export const ServicesSection = memo(() => {
   ];
 
   return (
-    <section className="py-20 bg-dark-surface/30">
+    <section className="py-12 sm:py-16 md:py-20 bg-dark-surface/30 w-full overflow-x-hidden">
       <Container>
-        <div className="text-center mb-12">
-          <p className="text-primary-blue font-mono uppercase tracking-wider text-sm mb-2">
+        <div className="text-center mb-8 sm:mb-10 md:mb-12 px-4">
+          <p className="text-primary-blue font-mono uppercase tracking-wider text-xs sm:text-sm mb-2">
             // SERVICE PROTOCOLS
           </p>
-          <h2 className="text-5xl font-black text-white mb-4 font-display uppercase tracking-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-3 sm:mb-4 font-display uppercase tracking-tight">
             <span className="text-white">OUR</span>{' '}
             <span className="text-primary-red">SERVICES</span>
           </h2>
-          <p className="text-gray-300 font-mono text-lg mt-4">Everything you need for RPA success</p>
+          <p className="text-gray-300 font-mono text-sm sm:text-base md:text-lg mt-3 sm:mt-4">Everything you need for RPA success</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-0">
           {services.map((service, index) => {
             const Icon = service.icon;
             return (

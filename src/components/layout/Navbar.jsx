@@ -114,20 +114,20 @@ export const Navbar = memo(() => {
               </>
             ) : (
               <>
-                <Link
-                  to="/sign-in"
-                  className="text-white text-sm font-mono uppercase tracking-wider hover:text-primary-blue transition-colors"
-                >
-                  SIGN IN
-                </Link>
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={() => navigate('/register/client')}
-                  className="font-mono uppercase tracking-wider"
-                >
-                  LAUNCH MISSION
-                </Button>
+            <Link
+              to="/sign-in"
+              className="text-white text-sm font-mono uppercase tracking-wider hover:text-primary-blue transition-colors"
+            >
+              SIGN IN
+            </Link>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => navigate('/register/client')}
+              className="font-mono uppercase tracking-wider"
+            >
+              LAUNCH MISSION
+            </Button>
               </>
             )}
           </div>
@@ -183,18 +183,18 @@ export const Navbar = memo(() => {
                   </Button>
                 </>
               ) : (
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={() => {
-                    navigate('/register/client');
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full mt-2"
-                >
-                  <FaRocket className="mr-2" />
-                  Launch Mission
-                </Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => {
+                  navigate('/register/client');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full mt-2"
+              >
+                <FaRocket className="mr-2" />
+                Launch Mission
+              </Button>
               )}
             </div>
           </div>

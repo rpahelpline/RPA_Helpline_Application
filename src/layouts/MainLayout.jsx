@@ -12,9 +12,38 @@ export const MainLayout = ({ children }) => {
   }, [children]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-dark-bg bg-starfield">
+    <div className="min-h-screen-safe flex flex-col bg-dark-bg bg-starfield bg-grid-layout overflow-x-hidden w-full">
+      {/* Small decorative boxes background layer - only boxes and stars */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Very small boxes (90% smaller) - using transform scale to ensure proper rendering */}
+        <div className="absolute top-[8%] left-[6%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[18%] left-[26%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[13%] left-[50%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[23%] left-[73%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[33%] left-[10%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[43%] left-[36%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[38%] left-[60%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[53%] left-[16%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[63%] left-[46%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[58%] left-[80%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[73%] left-[13%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[83%] left-[40%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[68%] left-[66%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[28%] left-[86%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[20%] left-[3%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[6%] left-[23%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[36%] left-[13%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[48%] left-[58%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[62%] left-[33%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[76%] left-[56%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[12%] left-[46%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[32%] left-[26%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[54%] left-[76%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[70%] left-[10%] w-0.5 h-0.5" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.2)', transformOrigin: 'top left' }}></div>
+        <div className="absolute top-[82%] left-[66%] w-1 h-1" style={{ transform: 'scale(0.1)', backgroundColor: 'rgba(77, 166, 255, 0.15)', transformOrigin: 'top left' }}></div>
+      </div>
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex-grow relative z-10 w-full overflow-x-hidden">
         {children}
       </main>
       <Footer />

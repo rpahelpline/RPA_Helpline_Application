@@ -34,21 +34,21 @@ export const ProjectLifecycle = memo(() => {
   ];
 
   return (
-    <section className="py-20">
+    <section className="py-12 sm:py-16 md:py-20 w-full overflow-x-hidden">
       <Container>
         {/* Header */}
-        <div className="mb-12">
-          <p className="text-primary-blue font-mono uppercase tracking-wider text-sm mb-2 text-center">
+        <div className="mb-8 sm:mb-10 md:mb-12 px-4">
+          <p className="text-primary-blue font-mono uppercase tracking-wider text-xs sm:text-sm mb-2 text-center">
             // MISSION PROTOCOL
           </p>
-          <h2 className="text-5xl font-black text-center mb-4 font-display uppercase tracking-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-center mb-3 sm:mb-4 font-display uppercase tracking-tight">
             <span className="text-white">PROJECT</span>{' '}
             <span className="text-primary-red">LIFECYCLE</span>
           </h2>
         </div>
 
         {/* Phase Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10 md:mb-12 px-4 sm:px-0">
           {phases.map((phase, index) => {
             const Icon = phase.icon;
             return (
@@ -90,20 +90,20 @@ export const ProjectLifecycle = memo(() => {
         </div>
 
         {/* Call to Action */}
-        <div className="relative border-2 border-primary-red bg-dark-surface/80 backdrop-blur-sm p-8 corner-brackets max-w-4xl mx-auto">
+        <div className="relative border-2 border-primary-red bg-dark-surface/80 backdrop-blur-sm p-4 sm:p-6 md:p-8 corner-brackets max-w-4xl mx-auto w-full px-4 sm:px-6 md:px-8">
           <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-primary-red"></div>
           <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-primary-blue"></div>
           
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6">
             <div className="text-primary-red">
-              <FaRocket className="text-5xl" />
+              <FaRocket className="text-3xl sm:text-4xl md:text-5xl" />
             </div>
             <div className="text-center md:text-left flex-1">
-              <h3 className="text-3xl font-black mb-2 font-display uppercase">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-black mb-2 font-display uppercase">
                 <span className="text-white">READY FOR</span>{' '}
                 <span className="text-primary-red">LAUNCH?</span>
               </h3>
-              <p className="text-gray-300 font-mono text-sm mb-4">
+              <p className="text-gray-300 font-mono text-xs sm:text-sm mb-3 sm:mb-4">
                 Initiate your automation mission today. Our specialists are standing by.
               </p>
             </div>
@@ -111,7 +111,7 @@ export const ProjectLifecycle = memo(() => {
               variant="primary"
               size="lg"
               onClick={handleStartMission}
-              className="font-mono uppercase tracking-wider whitespace-nowrap"
+              className="font-mono uppercase tracking-wider whitespace-nowrap w-full sm:w-auto"
             >
               START MISSION
             </Button>
