@@ -32,6 +32,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy - Required when behind a reverse proxy (like Render, Heroku, etc.)
+// This allows Express to correctly identify the client's IP address
+app.set('trust proxy', true);
+
 // Security middleware
 // In production, adjust helmet for serving static files
 const helmetOptions = process.env.NODE_ENV === 'production' ? {
