@@ -2,10 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/globals.css'
 import App from './App.jsx'
-import { initializeMockData } from './mock/data'
+import { useThemeStore } from './store/themeStore'
 
-// Initialize mock data
-initializeMockData();
+// Initialize theme store to apply theme on load
+useThemeStore.getState();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

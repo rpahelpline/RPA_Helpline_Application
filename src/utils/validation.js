@@ -9,9 +9,21 @@ export const validatePassword = (password) => {
   return passwordRegex.test(password);
 };
 
+// Indian phone number validation
 export const validatePhone = (phone) => {
-  const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
-  return phoneRegex.test(phone);
+  if (!phone) return false;
+  
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '');
+  
+  // Remove country code if present (91)
+  const cleanNumber = digits.startsWith('91') && digits.length > 10 
+    ? digits.substring(2) 
+    : digits;
+  
+  // Must be exactly 10 digits and start with 6, 7, 8, or 9 (Indian mobile numbers)
+  const phoneRegex = /^[6-9]\d{9}$/;
+  return phoneRegex.test(cleanNumber);
 };
 
 export const validateURL = (url) => {

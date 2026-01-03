@@ -34,7 +34,11 @@ export const ProjectCard = memo(({ project, getUrgencyBgColor }) => {
 
       {/* Salary */}
       <p className="text-white font-semibold mb-4 font-mono">
-        {project.salary || project.budget || 'Salary not specified'}
+        {project.salary || project.budget 
+          ? (project.salary || project.budget).includes('₹') 
+            ? (project.salary || project.budget)
+            : `₹${project.salary || project.budget}`
+          : 'Salary not specified'}
       </p>
 
       {/* Urgency Badge */}
@@ -50,5 +54,6 @@ export const ProjectCard = memo(({ project, getUrgencyBgColor }) => {
 });
 
 ProjectCard.displayName = 'ProjectCard';
+
 
 

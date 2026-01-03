@@ -1,16 +1,16 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Container } from '../components/layout/Container';
-import { Card } from '../components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner, SkeletonLoader } from '../components/common/LoadingSpinner';
 import { useProjectStore } from '../store/projectStore';
-import { useEffect, useState } from 'react';
-import { FaClock, FaDollarSign, FaIndustry, FaUser, FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
+import { useEffect, useState, memo, useCallback } from 'react';
+import { Clock, DollarSign, Building2, ArrowLeft, CheckCircle, Activity } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useToast } from '../hooks/useToast';
 
-export const ProjectDetail = () => {
+export const ProjectDetail = memo(() => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getProject } = useProjectStore();
@@ -40,7 +40,7 @@ export const ProjectDetail = () => {
     loadProject();
   }, [id, getProject, navigate, toast]);
 
-  const handleApply = () => {
+  const handleApply = useCallback(() => {
     if (!isAuthenticated) {
       toast.warning('Please sign in to apply');
       navigate('/sign-in');
@@ -53,7 +53,7 @@ export const ProjectDetail = () => {
     }
 
     toast.success('Application submitted successfully!');
-  };
+  }, [isAuthenticated, role, navigate, toast]);
 
   if (loading) {
     return (
@@ -83,112 +83,120 @@ export const ProjectDetail = () => {
   };
 
   return (
-    <Container className="py-12">
+    <Container className="py-8">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <Link
           to="/projects"
-          className="inline-flex items-center gap-2 text-white font-mono uppercase tracking-wider text-sm mb-6 hover:text-primary-blue transition-colors"
+          className="inline-flex items-center gap-2 text-foreground font-mono uppercase tracking-wider text-xs mb-4 hover:text-secondary transition-colors"
         >
-          <FaArrowLeft className="text-xs" />
+          <ArrowLeft className="h-3 w-3" />
           BACK TO PROJECTS
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <Card variant="elevated" className="bg-dark-surface/80 backdrop-blur-sm">
-              <div className="flex justify-between items-start mb-4">
-                <h1 className="text-3xl font-black text-white font-display">{project.title}</h1>
-                <Badge variant={getUrgencyColor(project.urgency)} className="font-mono uppercase">
-                  {project.urgency}
-                </Badge>
-              </div>
-
-              <div className="flex flex-wrap gap-4 mb-6 text-sm">
-                <div className="flex items-center text-gray-400">
-                  <FaIndustry className="mr-2 text-primary-blue" />
-                  {project.industry}
+            <Card className="tech-panel-strong border-glow-blue">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start gap-3">
+                  <CardTitle className="text-2xl font-display">{project.title}</CardTitle>
+                  <Badge variant={getUrgencyColor(project.urgency)} className="font-mono uppercase text-xs">
+                    {project.urgency}
+                  </Badge>
                 </div>
-                <div className="flex items-center text-gray-400">
-                  <FaClock className="mr-2 text-primary-blue" />
-                  {project.timeline}
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3 mb-4 text-sm">
+                  <div className="flex items-center text-muted-foreground">
+                    <Building2 className="mr-1.5 h-3 w-3 text-secondary" />
+                    {project.industry}
+                  </div>
+                  <div className="flex items-center text-muted-foreground">
+                    <Clock className="mr-1.5 h-3 w-3 text-secondary" />
+                    {project.timeline}
+                  </div>
+                  <div className="flex items-center text-muted-foreground">
+                    <DollarSign className="mr-1.5 h-3 w-3 text-secondary" />
+                    {project.budget}
+                  </div>
                 </div>
-                <div className="flex items-center text-gray-400">
-                  <FaDollarSign className="mr-2 text-primary-blue" />
-                  {project.budget}
+
+                <div className="mb-4">
+                  <h2 className="text-base font-black text-foreground mb-2 font-display uppercase">DESCRIPTION</h2>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap font-mono text-xs">
+                    {project.description}
+                  </p>
                 </div>
-              </div>
 
-              <div className="mb-6">
-                <h2 className="text-xl font-black text-white mb-3 font-display uppercase">DESCRIPTION</h2>
-                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap font-mono text-sm">
-                  {project.description}
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h2 className="text-xl font-black text-white mb-3 font-display uppercase">AUTOMATION TYPE</h2>
-                <Badge variant="info" className="text-lg px-4 py-2 font-mono uppercase">
-                  {project.automationType}
-                </Badge>
-              </div>
-
-              {project.requirements && (
-                <div>
-                  <h2 className="text-xl font-black text-white mb-3 font-display uppercase">REQUIREMENTS</h2>
-                  <ul className="list-disc list-inside text-gray-300 space-y-2 font-mono text-sm">
-                    {project.requirements.map((req, index) => (
-                      <li key={index}>{req}</li>
-                    ))}
-                  </ul>
+                <div className="mb-4">
+                  <h2 className="text-base font-black text-foreground mb-2 font-display uppercase">AUTOMATION TYPE</h2>
+                  <Badge variant="info" className="text-sm px-3 py-1 font-mono uppercase">
+                    {project.automationType}
+                  </Badge>
                 </div>
-              )}
+
+                {project.requirements && (
+                  <div>
+                    <h2 className="text-base font-black text-foreground mb-2 font-display uppercase">REQUIREMENTS</h2>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 font-mono text-xs">
+                      {project.requirements.map((req, index) => (
+                        <li key={index}>{req}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            <Card variant="elevated" className="bg-dark-surface/80 backdrop-blur-sm">
-              <h3 className="text-xl font-black text-white mb-4 font-display uppercase">PROJECT DETAILS</h3>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Status</p>
-                  <Badge variant={project.status === 'open' ? 'success' : 'default'}>
-                    {project.status}
-                  </Badge>
+          <div className="space-y-4">
+            <Card className="tech-panel border-glow-blue">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-display uppercase">PROJECT DETAILS</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-0.5 font-mono uppercase">Status</p>
+                    <Badge variant={project.status === 'open' ? 'success' : 'default'} className="text-xs">
+                      {project.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-0.5 font-mono uppercase">Urgency</p>
+                    <Badge variant={getUrgencyColor(project.urgency)} className="text-xs">{project.urgency}</Badge>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-0.5 font-mono uppercase">Budget</p>
+                    <p className="text-foreground font-semibold font-display text-sm">{project.budget}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-0.5 font-mono uppercase">Timeline</p>
+                    <p className="text-foreground font-semibold font-display text-sm">{project.timeline}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Urgency</p>
-                  <Badge variant={getUrgencyColor(project.urgency)}>{project.urgency}</Badge>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Budget</p>
-                  <p className="text-white font-semibold">{project.budget}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Timeline</p>
-                  <p className="text-white font-semibold">{project.timeline}</p>
-                </div>
-              </div>
+              </CardContent>
             </Card>
 
             {project.status === 'open' && (
-              <Card variant="elevated" className="bg-dark-surface/80 backdrop-blur-sm">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                  onClick={handleApply}
-                >
-                  <FaCheckCircle className="mr-2" />
-                  APPLY TO PROJECT
-                </Button>
-                {!isAuthenticated && (
-                  <p className="text-gray-400 text-sm mt-3 text-center">
-                    Sign in to apply for this project
-                  </p>
-                )}
+              <Card className="tech-panel border-glow-red">
+                <CardContent className="pt-4 pb-4">
+                  <Button
+                    variant="primary"
+                    className="w-full font-display uppercase tracking-wider glow-red text-sm"
+                    onClick={handleApply}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    APPLY TO PROJECT
+                  </Button>
+                  {!isAuthenticated && (
+                    <p className="text-muted-foreground text-xs mt-2 text-center font-mono">
+                      Sign in to apply
+                    </p>
+                  )}
+                </CardContent>
               </Card>
             )}
           </div>
@@ -196,5 +204,7 @@ export const ProjectDetail = () => {
       </div>
     </Container>
   );
-};
+});
+
+ProjectDetail.displayName = 'ProjectDetail';
 

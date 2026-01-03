@@ -1,94 +1,341 @@
-import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
+import { memo, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { FaBriefcase, FaFileAlt, FaChartLine } from 'react-icons/fa';
+import { 
+  Briefcase, DollarSign, Clock, Star, ArrowRight, MapPin, Building2,
+  CheckCircle, Calendar, Eye, Users, Target, BookmarkPlus, FileText,
+  Award, TrendingUp, ExternalLink, BookOpen, Send
+} from 'lucide-react';
 
-export const JobSeekerDashboard = () => {
-  const jobMatches = 12;
-  const appliedJobs = 5;
-  const profileComplete = 85;
+// ============================================================================
+// JOB CARD COMPONENT
+// ============================================================================
+const JobCard = memo(({ job, saved = false }) => (
+  <Card className="tech-panel border-border bg-card/50 hover-lift transition-all duration-300 group">
+    <CardContent className="p-5">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <div>
+            <h4 className="font-display font-bold text-foreground tracking-wider mb-1 group-hover:text-primary transition-colors">
+              {job.title}
+            </h4>
+            <p className="text-sm text-muted-foreground">{job.company}</p>
+            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {job.location}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {job.type}
+              </span>
+            </div>
+          </div>
+        </div>
+        <button className="text-muted-foreground hover:text-primary transition-colors">
+          <BookmarkPlus className={`w-5 h-5 ${saved ? 'fill-primary text-primary' : ''}`} />
+        </button>
+      </div>
+      
+      <div className="flex flex-wrap gap-2 mb-4">
+        {job.skills.slice(0, 4).map((skill, i) => (
+          <span key={i} className="px-2 py-1 rounded-lg bg-muted text-muted-foreground text-xs font-mono">
+            {skill}
+          </span>
+        ))}
+      </div>
+      
+      <div className="flex items-center justify-between pt-4 border-t border-border/50">
+        <div className="flex items-center gap-4">
+          <span className="text-lg font-display font-bold text-secondary">{job.salary}</span>
+          <span className={`px-2 py-1 rounded-full text-xs font-mono ${
+            job.urgency === 'URGENT' ? 'bg-primary/20 text-primary' : 
+            job.urgency === 'HOT' ? 'bg-accent/20 text-accent' :
+            'bg-secondary/20 text-secondary'
+          }`}>
+            {job.urgency}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{job.posted}</span>
+          <Link to={`/jobs/${job.id}`}>
+            <Button variant="outline" size="sm" className="font-mono text-xs tracking-wider">
+              APPLY NOW
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+));
+JobCard.displayName = 'JobCard';
+
+// ============================================================================
+// APPLICATION CARD COMPONENT
+// ============================================================================
+const ApplicationCard = memo(({ application }) => (
+  <Card className="tech-panel border-border bg-card/50 hover-lift transition-all duration-300">
+    <CardContent className="p-4">
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="flex-1">
+          <h4 className="font-display font-bold text-foreground tracking-wider mb-1">
+            {application.position}
+          </h4>
+          <p className="text-xs text-muted-foreground font-mono flex items-center gap-2">
+            <Building2 className="w-3 h-3" />
+            {application.company}
+          </p>
+        </div>
+        <span className={`px-2 py-1 rounded-full text-xs font-mono ${
+          application.status === 'INTERVIEW' ? 'bg-green-500/20 text-green-500' :
+          application.status === 'REVIEWED' ? 'bg-secondary/20 text-secondary' :
+          application.status === 'PENDING' ? 'bg-accent/20 text-accent' :
+          application.status === 'REJECTED' ? 'bg-destructive/20 text-destructive' :
+          'bg-muted text-muted-foreground'
+        }`}>
+          {application.status}
+        </span>
+      </div>
+      
+      <div className="space-y-2 mb-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">Application Progress</span>
+          <span className="text-primary font-mono">{application.progress}%</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-500 ${
+              application.status === 'INTERVIEW' ? 'bg-green-500' :
+              application.status === 'REVIEWED' ? 'bg-secondary' :
+              application.status === 'REJECTED' ? 'bg-destructive' :
+              'bg-gradient-to-r from-primary to-secondary'
+            }`}
+            style={{ width: `${application.progress}%` }}
+          />
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
+          Applied: {application.applied}
+        </span>
+        {application.nextStep && (
+          <span className="text-primary">{application.nextStep}</span>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+));
+ApplicationCard.displayName = 'ApplicationCard';
+
+// ============================================================================
+// MAIN JOB SEEKER DASHBOARD COMPONENT
+// ============================================================================
+export const JobSeekerDashboard = memo(() => {
+  // Mock data for recommended jobs
+  const recommendedJobs = useMemo(() => [
+    {
+      id: '1',
+      title: 'Senior UiPath Developer',
+      company: 'TechCorp Industries',
+      location: 'Remote',
+      type: 'Full-time',
+      salary: '₹12L - ₹15L',
+      skills: ['UiPath', 'RE Framework', 'SQL', 'Python'],
+      urgency: 'URGENT',
+      posted: '2 days ago',
+    },
+    {
+      id: '2',
+      title: 'RPA Solution Architect',
+      company: 'AutomateNow Inc',
+      location: 'New York, NY',
+      type: 'Full-time',
+      salary: '₹14L - ₹18L',
+      skills: ['UiPath', 'Automation Anywhere', 'Architecture', 'Leadership'],
+      urgency: 'HOT',
+      posted: '1 week ago',
+    },
+    {
+      id: '3',
+      title: 'Automation Anywhere Lead',
+      company: 'Digital First',
+      location: 'San Francisco, CA',
+      type: 'Full-time',
+      salary: '₹13L - ₹16L',
+      skills: ['Automation Anywhere', 'IQ Bot', 'Team Lead', 'Agile'],
+      urgency: 'NEW',
+      posted: 'Just now',
+    },
+  ], []);
+
+  // Mock data for applications
+  const applications = useMemo(() => [
+    { id: '1', position: 'Senior UiPath Developer', company: 'FinTech Corp', status: 'INTERVIEW', progress: 75, applied: 'Dec 15, 2024', nextStep: 'Interview on Jan 5' },
+    { id: '2', position: 'RPA Lead Developer', company: 'Healthcare Plus', status: 'REVIEWED', progress: 50, applied: 'Dec 12, 2024', nextStep: 'Awaiting decision' },
+    { id: '3', position: 'Automation Engineer', company: 'Enterprise Solutions', status: 'PENDING', progress: 25, applied: 'Dec 20, 2024' },
+    { id: '4', position: 'Bot Developer', company: 'StartupBot', status: 'REJECTED', progress: 100, applied: 'Dec 5, 2024' },
+  ], []);
+
+  // Stats
+  const stats = useMemo(() => ({
+    totalApplications: 12,
+    interviews: 3,
+    profileViews: 156,
+    savedJobs: 24,
+  }), []);
 
   return (
     <div className="space-y-8">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card variant="elevated">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm mb-1">Job Matches</p>
-              <p className="text-3xl font-bold text-white">{jobMatches}</p>
-            </div>
-            <FaBriefcase className="text-4xl text-primary-blue opacity-50" />
-          </div>
-        </Card>
-        
-        <Card variant="elevated">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm mb-1">Applications</p>
-              <p className="text-3xl font-bold text-white">{appliedJobs}</p>
-            </div>
-            <FaFileAlt className="text-4xl text-primary-blue opacity-50" />
-          </div>
-        </Card>
-        
-        <Card variant="elevated">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm mb-1">Profile Complete</p>
-              <p className="text-3xl font-bold text-white">{profileComplete}%</p>
-            </div>
-            <FaChartLine className="text-4xl text-primary-blue opacity-50" />
-          </div>
-        </Card>
-      </div>
+      {/* Section: Application Stats */}
+      <section>
+        <div className="grid md:grid-cols-4 gap-4">
+          <Card className="tech-panel border-border bg-card/50 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+            <CardContent className="p-4">
+              <p className="text-xs font-mono text-muted-foreground mb-1">TOTAL APPLICATIONS</p>
+              <p className="text-2xl font-display font-bold text-primary">{stats.totalApplications}</p>
+              <p className="text-xs text-green-500 flex items-center gap-1 mt-1">
+                <TrendingUp className="w-3 h-3" /> +3 this week
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="tech-panel border-border bg-card/50 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-green-500" />
+            <CardContent className="p-4">
+              <p className="text-xs font-mono text-muted-foreground mb-1">INTERVIEWS</p>
+              <p className="text-2xl font-display font-bold text-green-500">{stats.interviews}</p>
+              <p className="text-xs text-muted-foreground mt-1">Scheduled</p>
+            </CardContent>
+          </Card>
+          <Card className="tech-panel border-border bg-card/50 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-secondary" />
+            <CardContent className="p-4">
+              <p className="text-xs font-mono text-muted-foreground mb-1">PROFILE VIEWS</p>
+              <p className="text-2xl font-display font-bold text-secondary">{stats.profileViews}</p>
+              <p className="text-xs text-green-500 flex items-center gap-1 mt-1">
+                <Eye className="w-3 h-3" /> +28 this week
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="tech-panel border-border bg-card/50 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-accent" />
+            <CardContent className="p-4">
+              <p className="text-xs font-mono text-muted-foreground mb-1">SAVED JOBS</p>
+              <p className="text-2xl font-display font-bold text-accent">{stats.savedJobs}</p>
+              <Link to="/saved-jobs" className="text-xs text-secondary hover:underline mt-1 inline-block">
+                View all →
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
-      {/* Job Matches */}
-      <Card variant="elevated">
-        <h2 className="text-2xl font-bold text-white mb-6">Recommended Jobs</h2>
-        <div className="space-y-4">
-          {[
-            { title: 'Senior RPA Developer', company: 'Tech Corp', location: 'Remote', match: 95 },
-            { title: 'UiPath Consultant', company: 'Automation Inc', location: 'Hybrid', match: 88 },
-            { title: 'RPA Engineer', company: 'Finance Solutions', location: 'On-site', match: 82 },
-          ].map((job, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-dark-surface rounded-lg border border-dark-border">
-              <div>
-                <h3 className="text-white font-semibold">{job.title}</h3>
-                <p className="text-gray-400 text-sm">{job.company} • {job.location}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <Badge variant="info">{job.match}% Match</Badge>
-                <Button variant="primary" size="sm">
-                  Apply
-                </Button>
-              </div>
-            </div>
+      {/* Section: My Applications */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            MY APPLICATIONS
+          </h2>
+          <Link to="/applications">
+            <Button variant="ghost" className="font-mono text-xs tracking-wider text-secondary">
+              VIEW ALL <ArrowRight className="w-3 h-3 ml-1" />
+            </Button>
+          </Link>
+        </div>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {applications.map((application) => (
+            <ApplicationCard key={application.id} application={application} />
           ))}
         </div>
-      </Card>
+      </section>
 
-      {/* Applied Positions */}
-      <Card variant="elevated">
-        <h2 className="text-2xl font-bold text-white mb-6">Applied Positions</h2>
+      {/* Section: Recommended Jobs */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
+            <Target className="w-5 h-5 text-secondary" />
+            RECOMMENDED FOR YOU
+          </h2>
+          <Link to="/jobs">
+            <Button variant="ghost" className="font-mono text-xs tracking-wider text-secondary">
+              BROWSE ALL JOBS <ArrowRight className="w-3 h-3 ml-1" />
+            </Button>
+          </Link>
+        </div>
+        
         <div className="space-y-4">
-          {[
-            { title: 'RPA Developer', company: 'StartupXYZ', status: 'under-review' },
-            { title: 'Automation Specialist', company: 'BigCorp', status: 'interview' },
-          ].map((application, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-dark-surface rounded-lg border border-dark-border">
-              <div>
-                <h3 className="text-white font-semibold">{application.title}</h3>
-                <p className="text-gray-400 text-sm">{application.company}</p>
-              </div>
-              <Badge variant={application.status === 'interview' ? 'success' : 'warning'}>
-                {application.status}
-              </Badge>
-            </div>
+          {recommendedJobs.map((job) => (
+            <JobCard key={job.id} job={job} />
           ))}
         </div>
-      </Card>
+      </section>
+
+      {/* Section: Career Resources */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-accent" />
+            CAREER RESOURCES
+          </h2>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-4">
+          <Card className="tech-panel border-border bg-card/50 hover-lift cursor-pointer group">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <FileText className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display font-bold text-foreground tracking-wider group-hover:text-primary transition-colors">
+                  RESUME BUILDER
+                </h3>
+                <p className="text-sm text-muted-foreground">Create ATS-friendly resume</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </CardContent>
+          </Card>
+          
+          <Card className="tech-panel border-border bg-card/50 hover-lift cursor-pointer group">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/30 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                <Award className="w-6 h-6 text-secondary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display font-bold text-foreground tracking-wider group-hover:text-secondary transition-colors">
+                  SKILL ASSESSMENTS
+                </h3>
+                <p className="text-sm text-muted-foreground">Verify your expertise</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-secondary transition-colors" />
+            </CardContent>
+          </Card>
+          
+          <Card className="tech-panel border-border bg-card/50 hover-lift cursor-pointer group">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                <Users className="w-6 h-6 text-accent" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display font-bold text-foreground tracking-wider group-hover:text-accent transition-colors">
+                  INTERVIEW PREP
+                </h3>
+                <p className="text-sm text-muted-foreground">Practice RPA interviews</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </div>
   );
-};
+});
 
+JobSeekerDashboard.displayName = 'JobSeekerDashboard';

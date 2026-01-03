@@ -17,7 +17,7 @@ export const Select = ({
       {label && (
         <label
           htmlFor={inputId}
-          className="block text-sm font-medium text-gray-300 mb-2"
+          className="block text-sm font-medium text-foreground mb-2 font-mono uppercase tracking-wider"
         >
           {label}
         </label>
@@ -25,12 +25,12 @@ export const Select = ({
       <select
         id={inputId}
         className={clsx(
-          'w-full px-4 py-2 bg-dark-bg border border-primary-blue/30 rounded-lg',
-          'text-white font-mono tracking-wide',
-          'focus:outline-none focus:border-primary-blue focus:ring-1 focus:ring-primary-blue',
+          'w-full px-4 py-2 bg-background border border-input rounded-lg',
+          'text-foreground font-mono tracking-wide',
+          'focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           error
-            ? 'border-primary-red focus:ring-primary-red'
+            ? 'border-destructive focus:ring-destructive'
             : '',
           className
         )}
@@ -38,14 +38,14 @@ export const Select = ({
       >
         {options
           ? options.map((option) => (
-              <option key={option.value} value={option.value} className="bg-dark-surface">
+              <option key={option.value} value={option.value} className="bg-card text-foreground">
                 {option.label}
               </option>
             ))
           : children}
       </select>
       {error && (
-        <p className="mt-1 text-sm text-primary-red font-mono">{error}</p>
+        <p className="mt-1 text-sm text-destructive font-mono">{error}</p>
       )}
     </div>
   );

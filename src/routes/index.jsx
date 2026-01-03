@@ -1,12 +1,14 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, memo } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { PageLoader } from '../components/common/LoadingSpinner';
+import { PageTransition } from '../components/common/PageTransition';
+import { ScrollToTop } from '../components/common/SmoothScroll';
 
-// Helper function to lazy load named exports
+// Helper function to lazy load named exports with preload support
 const lazyLoad = (importFunc, exportName) => {
-  return lazy(() => 
+  const Component = lazy(() => 
     importFunc().then(module => {
       const component = module[exportName];
       if (!component) {
@@ -16,12 +18,15 @@ const lazyLoad = (importFunc, exportName) => {
       }
       return { default: component };
     }).catch(error => {
-      // Safely log error without trying to convert object to string
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`Error loading component ${exportName}:`, errorMessage);
       throw error;
     })
   );
+  
+  // Add preload method for performance
+  Component.preload = importFunc;
+  return Component;
 };
 
 // Lazy load all pages for better performance
@@ -38,166 +43,109 @@ const RegisterDeveloper = lazyLoad(() => import('../pages/Register/RegisterDevel
 const RegisterTrainer = lazyLoad(() => import('../pages/Register/RegisterTrainer'), 'RegisterTrainer');
 const RegisterJobSeeker = lazyLoad(() => import('../pages/Register/RegisterJobSeeker'), 'RegisterJobSeeker');
 const RegisterProject = lazyLoad(() => import('../pages/Register/RegisterProject'), 'RegisterProject');
+const ProfileSetup = lazyLoad(() => import('../pages/ProfileSetup'), 'ProfileSetup');
+const Jobs = lazyLoad(() => import('../pages/Jobs'), 'Jobs');
 const NotFound = lazyLoad(() => import('../pages/NotFound'), 'NotFound');
+const GitHubCallback = lazyLoad(() => import('../pages/Auth/GitHubCallback'), 'GitHubCallback');
 
-// Loading fallback component
-const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-dark-bg bg-starfield">
-    <div className="text-center">
-      <LoadingSpinner size="xl" className="mb-4" />
-      <p className="text-white font-mono uppercase tracking-wider text-sm">LOADING MISSION DATA...</p>
-    </div>
+// Smooth loading fallback
+const SmoothLoader = memo(() => (
+  <div 
+    className="min-h-screen flex items-center justify-center bg-background"
+    style={{
+      animation: 'fadeIn 0.3s ease-out',
+    }}
+  >
+    <PageLoader />
   </div>
-);
+));
+SmoothLoader.displayName = 'SmoothLoader';
+
+// Route wrapper with smooth transitions
+const RouteWrapper = memo(({ children, withLayout = true }) => {
+  if (withLayout) {
+    return (
+      <MainLayout>
+        <PageTransition>
+          <Suspense fallback={<SmoothLoader />}>
+            {children}
+          </Suspense>
+        </PageTransition>
+      </MainLayout>
+    );
+  }
+  
+  return (
+    <PageTransition>
+      <Suspense fallback={<SmoothLoader />}>
+        {children}
+      </Suspense>
+    </PageTransition>
+  );
+});
+RouteWrapper.displayName = 'RouteWrapper';
 
 export const AppRoutes = () => {
+  const location = useLocation();
+  
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route 
-          path="/" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <Home />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route 
-          path="/sign-in" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <SignIn />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route 
-          path="/projects" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <Projects />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route 
-          path="/projects/:id" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <ProjectDetail />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route 
-          path="/how-it-works" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <HowItWorks />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<PageLoader />}>
-                <Dashboard />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-        <Route 
-          path="/register" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <Register />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route 
-          path="/register/client" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <RegisterClient />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route 
-          path="/register/freelancer" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <RegisterFreelancer />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route 
-          path="/register/developer" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <RegisterDeveloper />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route 
-          path="/register/trainer" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <RegisterTrainer />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route 
-          path="/register/jobseeker" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <RegisterJobSeeker />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-        <Route
-          path="/register/project"
-          element={
-            <ProtectedRoute allowedRoles={['client']}>
-              <MainLayout>
-                <Suspense fallback={<PageLoader />}>
+    <>
+      <ScrollToTop />
+      <Suspense fallback={<SmoothLoader />}>
+        <Routes location={location} key={location.pathname}>
+          {/* Public Routes */}
+          <Route path="/" element={<RouteWrapper><Home /></RouteWrapper>} />
+          <Route path="/sign-in" element={<RouteWrapper><SignIn /></RouteWrapper>} />
+          <Route path="/projects" element={<RouteWrapper><Projects /></RouteWrapper>} />
+          <Route path="/projects/:id" element={<RouteWrapper><ProjectDetail /></RouteWrapper>} />
+          <Route path="/jobs" element={<RouteWrapper><Jobs /></RouteWrapper>} />
+          <Route path="/how-it-works" element={<RouteWrapper><HowItWorks /></RouteWrapper>} />
+          <Route path="/register" element={<RouteWrapper><Register /></RouteWrapper>} />
+          <Route path="/register/client" element={<RouteWrapper><RegisterClient /></RouteWrapper>} />
+          <Route path="/register/freelancer" element={<RouteWrapper><RegisterFreelancer /></RouteWrapper>} />
+          <Route path="/register/developer" element={<RouteWrapper><RegisterDeveloper /></RouteWrapper>} />
+          <Route path="/register/trainer" element={<RouteWrapper><RegisterTrainer /></RouteWrapper>} />
+          <Route path="/register/jobseeker" element={<RouteWrapper><RegisterJobSeeker /></RouteWrapper>} />
+          
+          {/* OAuth Callbacks */}
+          <Route path="/auth/github/callback" element={<RouteWrapper withLayout={false}><GitHubCallback /></RouteWrapper>} />
+          
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <RouteWrapper withLayout={false}>
+                  <Dashboard />
+                </RouteWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/register/project"
+            element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <RouteWrapper>
                   <RegisterProject />
-                </Suspense>
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route 
-          path="*" 
-          element={
-            <MainLayout>
-              <Suspense fallback={<PageLoader />}>
-                <NotFound />
-              </Suspense>
-            </MainLayout>
-          } 
-        />
-      </Routes>
-    </Suspense>
+                </RouteWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile-setup"
+            element={
+              <ProtectedRoute>
+                <RouteWrapper withLayout={false}>
+                  <ProfileSetup />
+                </RouteWrapper>
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* 404 */}
+          <Route path="*" element={<RouteWrapper><NotFound /></RouteWrapper>} />
+        </Routes>
+      </Suspense>
+    </>
   );
 };
-

@@ -1,65 +1,95 @@
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
+import { ArrowLeft, User, Mail, Building2 } from 'lucide-react';
 import { Container } from '../../components/layout/Container';
 import { Button } from '../../components/ui/Button';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useAuthStore } from '../../store/authStore';
-import { addMockData } from '../../mock/data';
+import { useToast } from '../../hooks/useToast';
+import { authApi } from '../../services/api';
 
-export const RegisterClient = () => {
+export const RegisterClient = memo(() => {
   const navigate = useNavigate();
-  const { login, setRole } = useAuthStore();
+  const { register, setRole } = useAuthStore();
+  const toast = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     company: '',
+    password: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const handleSubmit = (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    const clientData = {
-      name: formData.name,
-      email: formData.email,
-      company: formData.company,
-      role: 'client',
-    };
-    
-    const userData = addMockData('users', clientData);
-    login({ ...userData, role: 'client' });
-    setRole('client');
-    navigate('/dashboard');
-  };
+    setLoading(true);
+    setErrors({});
+
+    try {
+      const result = await register({
+        full_name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        user_type: 'client',
+        company_name: formData.company,
+      });
+
+      if (result.success) {
+        setRole('client');
+        toast.success('Account created successfully!');
+        navigate('/profile-setup');
+      } else {
+        // Handle rate limiting
+        if (result.status === 429) {
+          toast.error('Too many registration attempts. Please wait a moment before trying again.');
+          setErrors({ email: 'Rate limit exceeded. Please wait before trying again.' });
+        } else {
+          toast.error(result.error || 'Registration failed');
+          setErrors({ email: result.error || 'Registration failed' });
+        }
+      }
+    } catch (error) {
+      console.error('Registration failed:', error);
+      const errorMessage = error.message || error.error || 'Registration failed. Please try again.';
+      toast.error(errorMessage);
+      setErrors({ email: errorMessage });
+    } finally {
+      setLoading(false);
+    }
+  }, [formData, register, setRole, navigate, toast]);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] mt-16 flex items-center justify-center bg-dark-bg bg-starfield py-12">
-      <Container className="w-full max-w-2xl">
+    <div className="h-screen flex items-center justify-center p-4">
+      <Container className="w-full max-w-md">
         {/* Return to Base Link */}
         <Link 
-          to="/" 
-          className="inline-flex items-center gap-2 text-white font-mono uppercase tracking-wider text-sm mb-8 hover:text-primary-blue transition-colors"
+          to="/register" 
+          className="inline-flex items-center gap-1.5 text-foreground font-mono uppercase tracking-wider text-xs mb-3 hover:text-secondary transition-colors"
         >
-          <FaArrowLeft className="text-xs" />
-          RETURN TO BASE
+          <ArrowLeft className="h-3 w-3" />
+          BACK
         </Link>
 
         {/* Access Terminal Card */}
-        <div className="bg-dark-surface/80 backdrop-blur-sm border border-primary-blue/30 rounded-lg p-8 sm:p-10 shadow-[0_0_30px_rgba(77,166,255,0.1)]">
+        <div className="tech-panel-strong rounded-xl p-5 sm:p-6 border-glow-blue">
           {/* Title */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl sm:text-5xl font-black text-white font-display uppercase tracking-tight mb-2">
-              CLIENT REGISTRATION
+          <div className="text-center mb-5">
+            <h1 className="text-2xl sm:text-3xl font-black text-foreground font-display uppercase tracking-tight mb-1">
+              CLIENT <span className="text-primary">REGISTRATION</span>
             </h1>
-            <p className="text-white/80 font-mono uppercase tracking-[0.2em] text-sm">
+            <p className="text-muted-foreground font-mono uppercase tracking-wider text-[10px]">
               EMPLOYER / CLIENT ACCESS
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Input Fields */}
-            <div className="space-y-6">
+            <div className="space-y-3">
               <div>
-                <label className="block text-white font-mono uppercase tracking-wider text-xs mb-2">
-                  OPERATOR NAME
+                <label className="block text-foreground font-mono uppercase tracking-wider text-[10px] mb-1 flex items-center gap-1.5">
+                  <User className="h-3 w-3 text-secondary" />
+                  NAME
                 </label>
                 <input
                   type="text"
@@ -67,27 +97,29 @@ export const RegisterClient = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="John Doe"
-                  className="w-full px-4 py-3 bg-dark-bg border border-primary-blue/30 rounded-lg text-white placeholder-gray-500 font-mono tracking-wide focus:outline-none focus:border-primary-blue focus:ring-1 focus:ring-primary-blue"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-lg text-foreground text-sm placeholder-muted-foreground font-mono focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/30"
                 />
               </div>
 
               <div>
-                <label className="block text-white font-mono uppercase tracking-wider text-xs mb-2">
-                  EMAIL ADDRESS
+                <label className="block text-foreground font-mono uppercase tracking-wider text-[10px] mb-1 flex items-center gap-1.5">
+                  <Mail className="h-3 w-3 text-secondary" />
+                  EMAIL
                 </label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="operator@mission.control"
-                  className="w-full px-4 py-3 bg-dark-bg border border-primary-blue/30 rounded-lg text-white placeholder-gray-500 font-mono tracking-wide focus:outline-none focus:border-primary-blue focus:ring-1 focus:ring-primary-blue"
+                  placeholder="you@company.com"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-lg text-foreground text-sm placeholder-muted-foreground font-mono focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/30"
                 />
               </div>
 
               <div>
-                <label className="block text-white font-mono uppercase tracking-wider text-xs mb-2">
-                  COMPANY NAME
+                <label className="block text-foreground font-mono uppercase tracking-wider text-[10px] mb-1 flex items-center gap-1.5">
+                  <Building2 className="h-3 w-3 text-secondary" />
+                  COMPANY
                 </label>
                 <input
                   type="text"
@@ -95,29 +127,57 @@ export const RegisterClient = () => {
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   placeholder="Company Inc"
-                  className="w-full px-4 py-3 bg-dark-bg border border-primary-blue/30 rounded-lg text-white placeholder-gray-500 font-mono tracking-wide focus:outline-none focus:border-primary-blue focus:ring-1 focus:ring-primary-blue"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-lg text-foreground text-sm placeholder-muted-foreground font-mono focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-foreground font-mono uppercase tracking-wider text-[10px] mb-1 flex items-center gap-1.5">
+                  <Mail className="h-3 w-3 text-secondary" />
+                  PASSWORD
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Min 8 characters"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-lg text-foreground text-sm placeholder-muted-foreground font-mono focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/30"
                 />
               </div>
             </div>
+            
+            {errors.email && (
+              <div className="text-destructive text-xs font-mono">{errors.email}</div>
+            )}
 
             {/* Submit Button */}
-            <div className="flex gap-4">
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/register')}
+                className="font-display uppercase tracking-wider text-xs"
+              >
+                CANCEL
+              </Button>
               <Button
                 type="submit"
                 variant="primary"
-                size="lg"
-                className="flex-1 font-mono uppercase tracking-wider"
+                size="sm"
+                disabled={loading}
+                className="flex-1 font-display uppercase tracking-wider text-xs glow-red"
               >
-                CREATE ACCOUNT
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="lg"
-                onClick={() => navigate('/')}
-                className="font-mono uppercase tracking-wider"
-              >
-                CANCEL
+                {loading ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    CREATING...
+                  </>
+                ) : (
+                  'CREATE ACCOUNT'
+                )}
               </Button>
             </div>
           </form>
@@ -125,5 +185,7 @@ export const RegisterClient = () => {
       </Container>
     </div>
   );
-};
+});
+
+RegisterClient.displayName = 'RegisterClient';
 

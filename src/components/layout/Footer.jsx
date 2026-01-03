@@ -1,51 +1,40 @@
 import { Link } from 'react-router-dom';
 import { Container } from './Container';
+import { Rocket } from 'lucide-react';
 
 export const Footer = () => {
   return (
-    <footer className="bg-dark-surface/80 backdrop-blur-sm border-t border-dark-border mt-auto">
+    <footer className="tech-panel mt-auto border-t border-border">
       <Container>
-        <div className="py-12 grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <h3 className="text-white font-black text-lg mb-4 font-display uppercase">RPA HELPLINE</h3>
-            <p className="text-gray-300 font-mono text-sm">
-              Connecting businesses with elite RPA talent for mission-critical automation.
-            </p>
+        <div className="py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-primary rounded flex items-center justify-center">
+              <Rocket className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <span className="text-lg font-display font-bold text-foreground tracking-wider">RPA HELPLINE</span>
           </div>
-          
-          <div>
-            <h4 className="text-white font-black mb-4 font-display uppercase text-sm">SERVICES</h4>
-            <ul className="space-y-2 text-gray-300 font-mono text-sm">
-              <li><Link to="/register/developer" className="hover:text-primary-blue transition-colors uppercase tracking-wider">HIRE DEVELOPERS</Link></li>
-              <li><Link to="/register/freelancer" className="hover:text-primary-blue transition-colors uppercase tracking-wider">FIND FREELANCERS</Link></li>
-              <li><Link to="/register/trainer" className="hover:text-primary-blue transition-colors uppercase tracking-wider">TRAINING PROGRAMS</Link></li>
-              <li><Link to="/register/project" className="hover:text-primary-blue transition-colors uppercase tracking-wider">POST PROJECT</Link></li>
-            </ul>
+          <div className="text-center md:text-left">
+            <p className="text-xs font-mono text-muted-foreground mb-2">COMMUNICATION CHANNEL</p>
+            <a href="mailto:contact@rpahelpline.com" className="text-sm text-secondary hover:text-secondary/80 transition-colors">
+              contact@rpahelpline.com
+            </a>
           </div>
-          
-          <div>
-            <h4 className="text-white font-black mb-4 font-display uppercase text-sm">RESOURCES</h4>
-            <ul className="space-y-2 text-gray-300 font-mono text-sm">
-              <li><Link to="/how-it-works" className="hover:text-primary-blue transition-colors uppercase tracking-wider">HOW IT WORKS</Link></li>
-              <li><Link to="/projects" className="hover:text-primary-blue transition-colors uppercase tracking-wider">BROWSE PROJECTS</Link></li>
-              <li><a href="#" className="hover:text-primary-blue transition-colors uppercase tracking-wider">BLOG</a></li>
-              <li><a href="#" className="hover:text-primary-blue transition-colors uppercase tracking-wider">SUPPORT</a></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="text-white font-black mb-4 font-display uppercase text-sm">COMPANY</h4>
-            <ul className="space-y-2 text-gray-300 font-mono text-sm">
-              <li><a href="#" className="hover:text-primary-blue transition-colors uppercase tracking-wider">ABOUT</a></li>
-              <li><a href="#" className="hover:text-primary-blue transition-colors uppercase tracking-wider">CONTACT</a></li>
-              <li><a href="#" className="hover:text-primary-blue transition-colors uppercase tracking-wider">PRIVACY</a></li>
-              <li><a href="#" className="hover:text-primary-blue transition-colors uppercase tracking-wider">TERMS</a></li>
-            </ul>
+          <div className="text-center md:text-right">
+            <p className="text-xs font-mono text-muted-foreground mb-2">DIRECT LINE</p>
+            <a href="tel:+919490030441" className="text-sm text-secondary hover:text-secondary/80 transition-colors">
+              +91 9490030441
+            </a>
           </div>
         </div>
         
-        <div className="border-t border-dark-border pt-8 pb-6 text-center text-gray-300 text-sm font-mono uppercase tracking-wider">
-          <p>&copy; 2024 RPA HELPLINE. ALL RIGHTS RESERVED.</p>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-border">
+          <div className="flex items-center gap-6 text-xs font-mono text-muted-foreground">
+            <span>© 2024 RPA HELPLINE. All rights reserved.</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-xs font-mono text-muted-foreground">ALL SYSTEMS NOMINAL</span>
+          </div>
         </div>
       </Container>
     </footer>

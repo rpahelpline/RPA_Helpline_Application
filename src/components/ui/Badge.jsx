@@ -8,12 +8,12 @@ export const Badge = ({
   ...props
 }) => {
   const variants = {
-    default: 'bg-dark-surface text-white border border-dark-border',
-    success: 'bg-status-green/20 text-status-green border border-status-green/30',
-    warning: 'bg-accent-yellow/20 text-accent-yellow border border-accent-yellow/30',
-    danger: 'bg-primary-red/20 text-primary-red border border-primary-red/30',
-    info: 'bg-primary-blue/20 text-primary-blue border border-primary-blue/30',
-    primary: 'bg-primary-blue/20 text-primary-blue border border-primary-blue/30',
+    default: 'bg-card text-foreground border border-border',
+    success: 'bg-green-500/20 text-green-500 border border-green-500/30',
+    warning: 'bg-accent/20 text-accent border border-accent/30',
+    danger: 'bg-destructive/20 text-destructive border border-destructive/30',
+    info: 'bg-secondary/20 text-secondary border border-secondary/30',
+    primary: 'bg-primary/20 text-primary border border-primary/30',
   };
   
   const sizes = {

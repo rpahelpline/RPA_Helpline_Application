@@ -1,18 +1,38 @@
-import { useEffect } from 'react';
+import { useEffect, memo, useRef } from 'react';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
-import { useSmoothScroll } from '../hooks/useSmoothScroll';
+import { useLocation } from 'react-router-dom';
 
-export const MainLayout = ({ children }) => {
-  useSmoothScroll();
+export const MainLayout = memo(({ children }) => {
+  const location = useLocation();
+  const prevLocationRef = useRef(location.pathname);
 
   useEffect(() => {
-    // Scroll to top on route change
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [children]);
+    // Scroll to top on route change with smooth behavior
+    if (prevLocationRef.current !== location.pathname) {
+      // Use requestAnimationFrame for smoother scrolling
+      requestAnimationFrame(() => {
+        window.scrollTo({ 
+          top: 0, 
+          left: 0, 
+          behavior: 'smooth' 
+        });
+      });
+      prevLocationRef.current = location.pathname;
+    }
+  }, [location.pathname]);
 
   return (
-    <div className="min-h-screen-safe flex flex-col bg-dark-bg bg-starfield bg-grid-layout overflow-x-hidden w-full">
+    <div className="min-h-screen-safe flex flex-col bg-background relative overflow-x-hidden w-full">
+      {/* Star field background */}
+      <div className="fixed inset-0 star-field opacity-60" />
+      
+      {/* Grid overlay */}
+      <div className="fixed inset-0 grid-overlay opacity-30" />
+      
+      {/* Scan lines */}
+      <div className="fixed inset-0 scan-lines pointer-events-none" />
+      
       {/* Small decorative boxes background layer - only boxes and stars */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         {/* Very small boxes (90% smaller) - using transform scale to ensure proper rendering */}
@@ -49,5 +69,7 @@ export const MainLayout = ({ children }) => {
       <Footer />
     </div>
   );
-};
+});
+
+MainLayout.displayName = 'MainLayout';
 
