@@ -166,34 +166,64 @@ app.use('/api/messages', messageRoutes);
 // File uploads
 app.use('/api/upload', uploadRoutes);
 
-// Serve frontend index.html for all non-API routes (SPA fallback) - must be after API routes
+// Error handling for API routes (before SPA fallback, only for /api routes)
+app.use('/api', notFoundHandler);
+app.use('/api', errorHandler);
+
+// Serve frontend index.html for all non-API routes (SPA fallback) - must be LAST
 // This handles GET requests for SPA routing (all other routes serve index.html)
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.resolve(__dirname, '../../dist');
   const indexPath = path.join(distPath, 'index.html');
   
-  // Handle all non-API GET routes with index.html for SPA routing
-  app.get('*', (req, res, next) => {
-    // Skip API routes - let them fall through to error handlers
+  console.log(`[Frontend] SPA fallback configured`);
+  console.log(`[Frontend] Dist path: ${distPath}`);
+  console.log(`[Frontend] Index path: ${indexPath}`);
+  console.log(`[Frontend] Index file exists: ${existsSync(indexPath)}`);
+  
+  // Handle ALL non-API routes with index.html for SPA routing
+  // This must be the last route handler
+  app.get('*', (req, res) => {
+    // Double-check: skip API routes (should already be handled, but just in case)
     if (req.path.startsWith('/api')) {
-      return next();
+      return res.status(404).json({ error: 'Not Found', message: `Cannot ${req.method} ${req.originalUrl}` });
     }
+    
+    // Check if index.html exists before trying to serve it
+    if (!existsSync(indexPath)) {
+      console.error(`[Frontend] ERROR: index.html not found at ${indexPath}`);
+      return res.status(500).send(`
+        <html>
+          <body style="font-family: monospace; padding: 20px; background: #000; color: #fff;">
+            <h1>Frontend Build Not Found</h1>
+            <p>The frontend build was not found at: <code>${indexPath}</code></p>
+            <p>Please ensure:</p>
+            <ul>
+              <li>The build command completed successfully</li>
+              <li>The dist folder exists in the project root</li>
+              <li>index.html exists in the dist folder</li>
+            </ul>
+          </body>
+        </html>
+      `);
+    }
+    
+    console.log(`[Frontend] Serving index.html for route: ${req.path}`);
     
     // Send index.html for all other GET requests (SPA routing)
     res.sendFile(indexPath, (err) => {
       if (err) {
-        console.error(`[Frontend] Error serving index.html: ${err.message}`);
+        console.error(`[Frontend] Error serving index.html for ${req.path}:`, err.message);
+        console.error(`[Frontend] Index path was: ${indexPath}`);
         if (!res.headersSent) {
-          res.status(500).send('Frontend not found. Please ensure the build completed successfully.');
+          res.status(500).send(`Error serving frontend: ${err.message}`);
         }
+      } else {
+        console.log(`[Frontend] ✓ Successfully served index.html for ${req.path}`);
       }
     });
   });
 }
-
-// Error handling for API routes (must be after SPA fallback so it only catches API errors)
-app.use('/api', notFoundHandler);
-app.use('/api', errorHandler);
 
 // Start server - listen on 0.0.0.0 for Render deployment
 const HOST = process.env.HOST || '0.0.0.0';

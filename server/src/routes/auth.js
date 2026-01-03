@@ -1,6 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import { supabaseAdmin } from '../config/supabase.js';
 import { generateToken, generateRefreshToken, authenticateToken } from '../middleware/auth.js';
 import { registerValidation, loginValidation } from '../middleware/validate.js';
@@ -345,6 +346,143 @@ router.put('/password', authenticateToken, asyncHandler(async (req, res) => {
 router.post('/logout', authenticateToken, asyncHandler(async (req, res) => {
   // Could implement token blacklisting here
   res.json({ message: 'Logged out successfully' });
+}));
+
+// Google OAuth
+router.post('/google', asyncHandler(async (req, res) => {
+  const { token: googleToken } = req.body;
+
+  if (!googleToken) {
+    return res.status(400).json({ error: 'Google token is required' });
+  }
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    return res.status(500).json({ error: 'Google OAuth is not configured on the server' });
+  }
+
+  try {
+    // Verify Google token
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({
+      idToken: googleToken,
+      audience: clientId,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload) {
+      return res.status(401).json({ error: 'Invalid Google token' });
+    }
+
+    const { email, name, picture, sub: googleId } = payload;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email not provided by Google' });
+    }
+
+    // Check if user exists
+    let { data: user } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    let profile = null;
+
+    if (user) {
+      // User exists, get profile
+      const { data: profileData } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      profile = profileData;
+
+      // Update last login
+      await supabaseAdmin
+        .from('users')
+        .update({
+          last_login_at: new Date().toISOString(),
+          login_count: (user.login_count || 0) + 1
+        })
+        .eq('id', user.id);
+    } else {
+      // Create new user
+      const { data: newUser, error: userError } = await supabaseAdmin
+        .from('users')
+        .insert({
+          email,
+          password_hash: null, // OAuth users don't have passwords
+          phone: null,
+          email_verified: true, // Google emails are verified
+        })
+        .select()
+        .single();
+
+      if (userError) {
+        console.error('User creation error:', userError);
+        return res.status(500).json({ error: 'Failed to create user account' });
+      }
+
+      user = newUser;
+
+      // Create profile with default user type (can be updated later)
+      const { data: newProfile, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          full_name: name || email.split('@')[0],
+          user_type: USER_TYPES.FREELANCER, // Default type
+          display_name: name?.split(' ')[0] || email.split('@')[0],
+          headline: USER_TYPE_LABELS[USER_TYPES.FREELANCER],
+          avatar_url: picture || null,
+          is_verified: true,
+        })
+        .select()
+        .single();
+
+      if (profileError) {
+        // Rollback: delete user if profile creation fails
+        await supabaseAdmin.from('users').delete().eq('id', user.id);
+        console.error('Profile creation error:', profileError);
+        return res.status(500).json({ error: 'Failed to create user profile' });
+      }
+
+      profile = newProfile;
+
+      // Create default specialized profile
+      await createSpecializedProfile(profile.id, USER_TYPES.FREELANCER);
+    }
+
+    if (!profile) {
+      return res.status(500).json({ error: 'User profile not found' });
+    }
+
+    // Generate tokens
+    const token = generateToken(profile.id, email);
+    const refreshToken = generateRefreshToken(profile.id);
+
+    res.json({
+      message: 'Google authentication successful',
+      user: {
+        id: profile.id,
+        email: user.email,
+        full_name: profile.full_name,
+        display_name: profile.display_name,
+        user_type: profile.user_type,
+        avatar_url: profile.avatar_url || picture,
+        is_verified: profile.is_verified
+      },
+      token,
+      refreshToken
+    });
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+    if (error.message?.includes('Invalid token')) {
+      return res.status(401).json({ error: 'Invalid Google token' });
+    }
+    return res.status(500).json({ error: 'Google authentication failed' });
+  }
 }));
 
 export default router;

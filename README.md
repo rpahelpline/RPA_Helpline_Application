@@ -205,11 +205,41 @@ See [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) for complete setup instructio
 
 ## 🔧 Environment Variables
 
-Create a `.env` file in the root directory:
+### Frontend (.env in root directory):
 
 ```env
 VITE_API_BASE_URL=http://localhost:3000/api
-VITE_ENV=production
+VITE_ENV=development
+
+# Google OAuth
+VITE_GOOGLE_CLIENT_ID=1090272938360-pjrmn316krmm9f1qucfr5todp83j4jmp.apps.googleusercontent.com
+
+# GitHub OAuth (Optional)
+# VITE_GITHUB_CLIENT_ID=your-github-client-id
+```
+
+### Backend (server/.env):
+
+```env
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# JWT Secret (min 32 characters)
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
+
+# Google OAuth
+GOOGLE_CLIENT_ID=1090272938360-pjrmn316krmm9f1qucfr5todp83j4jmp.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret-here
+
+# GitHub OAuth (Optional)
+# GITHUB_CLIENT_ID=your-github-client-id
+# GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Server Configuration
+PORT=3000
+NODE_ENV=development
 ```
 
 ## 📝 Scripts
