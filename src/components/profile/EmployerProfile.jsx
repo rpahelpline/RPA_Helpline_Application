@@ -132,3 +132,4 @@ export const EmployerProfile = memo(({ profile, specializedProfile }) => {
 
 EmployerProfile.displayName = 'EmployerProfile';
 
+

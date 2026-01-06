@@ -443,3 +443,4 @@ export const CourseDetail = () => {
 
 export default CourseDetail;
 
+

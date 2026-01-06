@@ -19,3 +19,4 @@ ALTER COLUMN password_hash DROP NOT NULL;
 -- Actually, let's keep it simple - just allow NULL for OAuth users
 -- The application logic will handle validation
 
+

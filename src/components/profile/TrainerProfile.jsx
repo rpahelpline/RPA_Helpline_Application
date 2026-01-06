@@ -211,3 +211,4 @@ export const TrainerProfile = memo(({ profile, specializedProfile }) => {
 
 TrainerProfile.displayName = 'TrainerProfile';
 
+
