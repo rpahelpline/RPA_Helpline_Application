@@ -1,21 +1,34 @@
-import { useEffect, useState, useMemo, useCallback, memo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { statsApi, notificationApi, profileApi } from '../../services/api';
+import { useToast } from '../../hooks/useToast';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
 import { 
   Rocket, LogOut, Settings, Briefcase, Users, GraduationCap, Building2, Activity,
   Bell, Search, Plus, Eye, MessageSquare, TrendingUp, Clock, Star, FileText,
   CheckCircle, AlertCircle, ChevronRight, Calendar, DollarSign, Award,
-  BarChart3, Target, Code, Zap, Globe, ArrowUpRight, Filter, MoreHorizontal
+  BarChart3, Target, Code, Zap, Globe, ArrowUpRight, Filter, MoreHorizontal, User,
+  Menu, X
 } from 'lucide-react';
 import { ClientDashboard } from './ClientDashboard';
+import { EmployerDashboard } from './EmployerDashboard';
 import { FreelancerDashboard } from './FreelancerDashboard';
 import { DeveloperDashboard } from './DeveloperDashboard';
 import { TrainerDashboard } from './TrainerDashboard';
 import { JobSeekerDashboard } from './JobSeekerDashboard';
+import { ProfileDashboard } from './ProfileDashboard';
 import { ThemeSwitcher } from '../../components/ui/ThemeSwitcher';
 import { PageLoader } from '../../components/common/LoadingSpinner';
+import { GlobalSearch } from '../../components/common/GlobalSearch';
+import {
+  MessagesContent,
+  NotificationsContent,
+  ApplicationsContent,
+  PortfolioContent,
+  SettingsContent
+} from './DashboardContent';
 
 // ============================================================================
 // STAT CARD COMPONENT
@@ -120,55 +133,94 @@ ActivityItem.displayName = 'ActivityItem';
 // ============================================================================
 // SIDEBAR NAVIGATION COMPONENT
 // ============================================================================
-const SidebarNav = memo(({ role, currentSection, setCurrentSection }) => {
+const SidebarNav = memo(({ role, currentSection, setCurrentSection, unreadMessages, unreadNotifications, onMobileNavClick }) => {
+  const navigate = useNavigate();
+  
   const navItems = useMemo(() => {
-    const baseItems = [
-      { id: 'overview', label: 'Overview', icon: BarChart3 },
-      { id: 'messages', label: 'Messages', icon: MessageSquare, badge: 3 },
-      { id: 'notifications', label: 'Notifications', icon: Bell, badge: 5 },
+    // Common items for all roles
+    const commonItems = [
+      { id: 'profile', label: 'My Profile', icon: User, route: null },
+      { id: 'messages', label: 'Messages', icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages : null },
+      { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadNotifications > 0 ? unreadNotifications : null },
     ];
 
+    // Role-specific items
     const roleItems = {
-      client: [
-        { id: 'projects', label: 'My Projects', icon: Briefcase },
-        { id: 'talent', label: 'Find Talent', icon: Users },
-        { id: 'contracts', label: 'Contracts', icon: FileText },
+      // HIRING ROLES - They post jobs/projects and manage received applications
+      employer: [
+        { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+        { id: 'my-jobs', label: 'My Jobs', icon: Briefcase },
+        { id: 'job-applications', label: 'Job Applications', icon: FileText },
+        { id: 'post-job', label: 'Post Job', icon: Plus, route: '/post-job' },
+        { id: 'talent', label: 'Find Talent', icon: Users, route: '/talent' },
       ],
+      client: [
+        { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+        { id: 'my-projects', label: 'My Projects', icon: Briefcase },
+        { id: 'project-applications', label: 'Project Applications', icon: FileText },
+        { id: 'post-project', label: 'Post Project', icon: Plus, route: '/register/project' },
+        { id: 'talent', label: 'Find Talent', icon: Users, route: '/talent' },
+      ],
+      
+      // APPLYING ROLES - They browse and apply to jobs/projects
       freelancer: [
-        { id: 'opportunities', label: 'Opportunities', icon: Target },
-        { id: 'applications', label: 'Applications', icon: FileText },
-        { id: 'earnings', label: 'Earnings', icon: DollarSign },
+        { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+        { id: 'browse-projects', label: 'Browse Projects', icon: Target, route: '/projects' },
+        { id: 'browse-jobs', label: 'Browse Jobs', icon: Briefcase, route: '/jobs' },
+        { id: 'applications', label: 'My Applications', icon: FileText },
+        { id: 'portfolio', label: 'Portfolio', icon: Code },
       ],
       job_seeker: [
-        { id: 'jobs', label: 'Job Board', icon: Briefcase },
-        { id: 'applications', label: 'Applications', icon: FileText },
-        { id: 'saved', label: 'Saved Jobs', icon: Star },
+        { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+        { id: 'browse-jobs', label: 'Browse Jobs', icon: Briefcase, route: '/jobs' },
+        { id: 'applications', label: 'My Applications', icon: FileText },
       ],
       trainer: [
-        { id: 'courses', label: 'My Courses', icon: GraduationCap },
-        { id: 'students', label: 'Students', icon: Users },
-        { id: 'earnings', label: 'Earnings', icon: DollarSign },
+        { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+        { id: 'my-courses', label: 'My Courses', icon: GraduationCap },
+        { id: 'create-course', label: 'Create Course', icon: Plus, route: '/create-course' },
+        { id: 'browse-jobs', label: 'Browse Jobs', icon: Briefcase, route: '/jobs' },
+        { id: 'applications', label: 'My Applications', icon: FileText },
       ],
       ba_pm: [
-        { id: 'projects', label: 'Projects', icon: Target },
-        { id: 'opportunities', label: 'Opportunities', icon: Briefcase },
-        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+        { id: 'browse-projects', label: 'Browse Projects', icon: Target, route: '/projects' },
+        { id: 'browse-jobs', label: 'Browse Jobs', icon: Briefcase, route: '/jobs' },
+        { id: 'applications', label: 'My Applications', icon: FileText },
+      ],
+      developer: [
+        { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+        { id: 'browse-projects', label: 'Browse Projects', icon: Target, route: '/projects' },
+        { id: 'browse-jobs', label: 'Browse Jobs', icon: Briefcase, route: '/jobs' },
+        { id: 'applications', label: 'My Applications', icon: FileText },
       ],
     };
 
     return [
-      ...baseItems,
+      ...commonItems,
       ...(roleItems[role] || roleItems.freelancer),
       { id: 'settings', label: 'Settings', icon: Settings },
     ];
-  }, [role]);
+  }, [role, unreadMessages, unreadNotifications]);
+
+  const handleNavClick = (item) => {
+    if (item.route) {
+      navigate(item.route);
+    } else if (item.section) {
+      setCurrentSection(item.section);
+    } else {
+      setCurrentSection(item.id);
+    }
+    // Close sidebar on mobile after navigation
+    onMobileNavClick?.();
+  };
 
   return (
     <nav className="space-y-1">
       {navItems.map((item) => (
         <button
           key={item.id}
-          onClick={() => setCurrentSection(item.id)}
+          onClick={() => handleNavClick(item)}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-mono text-sm transition-all ${
             currentSection === item.id
               ? 'bg-primary/10 text-primary border border-primary/30'
@@ -179,7 +231,7 @@ const SidebarNav = memo(({ role, currentSection, setCurrentSection }) => {
             <item.icon className="w-4 h-4" />
             <span>{item.label}</span>
           </div>
-          {item.badge && (
+          {item.badge && item.badge > 0 && (
             <span className="px-2 py-0.5 rounded-full bg-primary text-white text-xs">
               {item.badge}
             </span>
@@ -195,27 +247,85 @@ SidebarNav.displayName = 'SidebarNav';
 // MAIN DASHBOARD COMPONENT
 // ============================================================================
 export const Dashboard = memo(() => {
-  const { user, role, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
+  // Get role from user - profile in store is same as user
+  const role = user?.user_type || 'freelancer';
   const navigate = useNavigate();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
-  const [currentSection, setCurrentSection] = useState('overview');
+  const [currentSection, setCurrentSection] = useState('profile');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [profileCompletion, setProfileCompletion] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const fetchingRef = useRef(false);
 
+  // Fetch dashboard data
   useEffect(() => {
-    const init = async () => {
-      try {
-        // Initialize in next tick to prevent blocking
-        await new Promise(resolve => requestAnimationFrame(resolve));
-        // Minimal delay for smooth transition
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      } catch (error) {
-        console.error('Failed to initialize dashboard:', error);
-      } finally {
+    // Prevent duplicate calls
+    if (fetchingRef.current) return;
+    
+    const fetchDashboardData = async () => {
+      if (!isAuthenticated) {
         setLoading(false);
+        return;
       }
+
+      fetchingRef.current = true;
+      let cancelled = false;
+
+      try {
+        // Fetch stats (includes unread counts and profile completion)
+        try {
+          const statsRes = await statsApi.getDashboardStats();
+          if (!cancelled) {
+            setDashboardStats(statsRes.stats || {});
+            setUnreadMessages(statsRes.stats?.unread_messages || 0);
+            setUnreadNotifications(statsRes.stats?.unread_notifications || 0);
+            setProfileCompletion(statsRes.stats?.profile_completion || 0);
+          }
+        } catch (error) {
+          if (!cancelled) console.error('Failed to fetch stats:', error);
+        }
+
+        // Fetch notifications
+        try {
+          const notifRes = await notificationApi.getAll({ limit: 5 });
+          if (!cancelled) {
+            setNotifications(notifRes.notifications || []);
+          }
+        } catch (error) {
+          if (!cancelled) console.error('Failed to fetch notifications:', error);
+        }
+
+        // Fetch activity
+        try {
+          const activityRes = await statsApi.getActivity({ limit: 5 });
+          if (!cancelled) {
+            setRecentActivity(activityRes.activity || []);
+          }
+        } catch (error) {
+          if (!cancelled) console.error('Failed to fetch activity:', error);
+        }
+      } catch (error) {
+        if (!cancelled) console.error('Failed to initialize dashboard:', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          fetchingRef.current = false;
+        }
+      }
+
+      return () => {
+        cancelled = true;
+      };
     };
-    init();
-  }, []);
+
+    fetchDashboardData();
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -234,7 +344,8 @@ export const Dashboard = memo(() => {
       job_seeker: { icon: Briefcase, label: 'JOB SEEKER', color: 'text-secondary' },
       jobseeker: { icon: Briefcase, label: 'JOB SEEKER', color: 'text-secondary' },
       trainer: { icon: GraduationCap, label: 'RPA TRAINER', color: 'text-accent' },
-      client: { icon: Building2, label: 'EMPLOYER / CLIENT', color: 'text-nasa-gold' },
+      client: { icon: Building2, label: 'CLIENT', color: 'text-nasa-gold' },
+      employer: { icon: Building2, label: 'EMPLOYER', color: 'text-nasa-gold' },
       developer: { icon: Target, label: 'BA / PROJECT MANAGER', color: 'text-primary' },
       ba_pm: { icon: Target, label: 'BA / PROJECT MANAGER', color: 'text-primary' },
     };
@@ -244,88 +355,374 @@ export const Dashboard = memo(() => {
   const userConfig = useMemo(() => getUserTypeConfig(), [getUserTypeConfig]);
   const profile = useMemo(() => user || { full_name: user?.name || user?.email?.split('@')[0] || 'Operator' }, [user]);
 
-  // Stats based on role
+  // Stats based on role and real data
   const statsData = useMemo(() => {
+    const stats = dashboardStats || {};
+    
     const baseStats = {
       client: [
-        { label: 'Active Projects', value: '5', icon: Briefcase, iconBg: 'bg-primary/10', iconColor: 'text-primary', valueColor: 'text-primary', accentColor: 'bg-primary', change: '+2 this month', changePositive: true },
-        { label: 'Hired Talent', value: '12', icon: Users, iconBg: 'bg-secondary/10', iconColor: 'text-secondary', valueColor: 'text-secondary', accentColor: 'bg-secondary', change: '+3 this week', changePositive: true },
-        { label: 'Total Spent', value: '₹2.45L', icon: DollarSign, iconBg: 'bg-accent/10', iconColor: 'text-accent', valueColor: 'text-accent', accentColor: 'bg-accent' },
-        { label: 'Avg. Rating', value: '4.9', icon: Star, iconBg: 'bg-nasa-gold/10', iconColor: 'text-nasa-gold', valueColor: 'text-nasa-gold', accentColor: 'bg-nasa-gold' },
+        { 
+          label: 'Active Projects', 
+          value: String(stats.active_projects || 0), 
+          icon: Briefcase, 
+          iconBg: 'bg-primary/10', 
+          iconColor: 'text-primary', 
+          valueColor: 'text-primary', 
+          accentColor: 'bg-primary' 
+        },
+        { 
+          label: 'Total Projects', 
+          value: String(stats.total_projects || 0), 
+          icon: Users, 
+          iconBg: 'bg-secondary/10', 
+          iconColor: 'text-secondary', 
+          valueColor: 'text-secondary', 
+          accentColor: 'bg-secondary' 
+        },
+        { 
+          label: 'Applications', 
+          value: String(stats.received_applications || 0), 
+          icon: FileText, 
+          iconBg: 'bg-accent/10', 
+          iconColor: 'text-accent', 
+          valueColor: 'text-accent', 
+          accentColor: 'bg-accent' 
+        },
+        { 
+          label: 'Profile Views', 
+          value: String(stats.profile_views || 0), 
+          icon: Eye, 
+          iconBg: 'bg-nasa-gold/10', 
+          iconColor: 'text-nasa-gold', 
+          valueColor: 'text-nasa-gold', 
+          accentColor: 'bg-nasa-gold' 
+        },
       ],
       freelancer: [
-        { label: 'Active Projects', value: '3', icon: Briefcase, iconBg: 'bg-primary/10', iconColor: 'text-primary', valueColor: 'text-primary', accentColor: 'bg-primary', change: '+1 this week', changePositive: true },
-        { label: 'Total Earnings', value: '₹82K', icon: DollarSign, iconBg: 'bg-secondary/10', iconColor: 'text-secondary', valueColor: 'text-secondary', accentColor: 'bg-secondary', change: '+15%', changePositive: true },
-        { label: 'Profile Views', value: '142', icon: Eye, iconBg: 'bg-accent/10', iconColor: 'text-accent', valueColor: 'text-accent', accentColor: 'bg-accent', change: '+28', changePositive: true },
-        { label: 'Rating', value: '4.8', icon: Star, iconBg: 'bg-nasa-gold/10', iconColor: 'text-nasa-gold', valueColor: 'text-nasa-gold', accentColor: 'bg-nasa-gold' },
+        { 
+          label: 'Active Projects', 
+          value: String(stats.active_projects || 0), 
+          icon: Briefcase, 
+          iconBg: 'bg-primary/10', 
+          iconColor: 'text-primary', 
+          valueColor: 'text-primary', 
+          accentColor: 'bg-primary' 
+        },
+        { 
+          label: 'Profile Views', 
+          value: String(stats.profile_views || 0), 
+          icon: Eye, 
+          iconBg: 'bg-secondary/10', 
+          iconColor: 'text-secondary', 
+          valueColor: 'text-secondary', 
+          accentColor: 'bg-secondary' 
+        },
+        { 
+          label: 'Applications', 
+          value: String(stats.pending_applications || 0), 
+          icon: FileText, 
+          iconBg: 'bg-accent/10', 
+          iconColor: 'text-accent', 
+          valueColor: 'text-accent', 
+          accentColor: 'bg-accent' 
+        },
+        { 
+          label: 'Completed', 
+          value: String(stats.completed_projects || 0), 
+          icon: CheckCircle, 
+          iconBg: 'bg-nasa-gold/10', 
+          iconColor: 'text-nasa-gold', 
+          valueColor: 'text-nasa-gold', 
+          accentColor: 'bg-nasa-gold' 
+        },
       ],
       job_seeker: [
-        { label: 'Applications', value: '8', icon: FileText, iconBg: 'bg-primary/10', iconColor: 'text-primary', valueColor: 'text-primary', accentColor: 'bg-primary', change: '+3 this week', changePositive: true },
-        { label: 'Interviews', value: '2', icon: Calendar, iconBg: 'bg-secondary/10', iconColor: 'text-secondary', valueColor: 'text-secondary', accentColor: 'bg-secondary' },
-        { label: 'Profile Views', value: '85', icon: Eye, iconBg: 'bg-accent/10', iconColor: 'text-accent', valueColor: 'text-accent', accentColor: 'bg-accent', change: '+12', changePositive: true },
-        { label: 'Saved Jobs', value: '15', icon: Star, iconBg: 'bg-nasa-gold/10', iconColor: 'text-nasa-gold', valueColor: 'text-nasa-gold', accentColor: 'bg-nasa-gold' },
+        { 
+          label: 'Applications', 
+          value: String(stats.total_applications || 0), 
+          icon: FileText, 
+          iconBg: 'bg-primary/10', 
+          iconColor: 'text-primary', 
+          valueColor: 'text-primary', 
+          accentColor: 'bg-primary' 
+        },
+        { 
+          label: 'Interviews', 
+          value: String(stats.interviews || 0), 
+          icon: Calendar, 
+          iconBg: 'bg-secondary/10', 
+          iconColor: 'text-secondary', 
+          valueColor: 'text-secondary', 
+          accentColor: 'bg-secondary' 
+        },
+        { 
+          label: 'Profile Views', 
+          value: String(stats.profile_views || 0), 
+          icon: Eye, 
+          iconBg: 'bg-accent/10', 
+          iconColor: 'text-accent', 
+          valueColor: 'text-accent', 
+          accentColor: 'bg-accent' 
+        },
+        { 
+          label: 'Pending', 
+          value: String(stats.pending_applications || 0), 
+          icon: Clock, 
+          iconBg: 'bg-nasa-gold/10', 
+          iconColor: 'text-nasa-gold', 
+          valueColor: 'text-nasa-gold', 
+          accentColor: 'bg-nasa-gold' 
+        },
       ],
       trainer: [
-        { label: 'Active Courses', value: '4', icon: GraduationCap, iconBg: 'bg-primary/10', iconColor: 'text-primary', valueColor: 'text-primary', accentColor: 'bg-primary' },
-        { label: 'Total Students', value: '156', icon: Users, iconBg: 'bg-secondary/10', iconColor: 'text-secondary', valueColor: 'text-secondary', accentColor: 'bg-secondary', change: '+23', changePositive: true },
-        { label: 'Earnings', value: '₹1.24L', icon: DollarSign, iconBg: 'bg-accent/10', iconColor: 'text-accent', valueColor: 'text-accent', accentColor: 'bg-accent', change: '+18%', changePositive: true },
-        { label: 'Avg. Rating', value: '4.9', icon: Star, iconBg: 'bg-nasa-gold/10', iconColor: 'text-nasa-gold', valueColor: 'text-nasa-gold', accentColor: 'bg-nasa-gold' },
+        { 
+          label: 'Active Courses', 
+          value: String(stats.active_courses || 0), 
+          icon: GraduationCap, 
+          iconBg: 'bg-primary/10', 
+          iconColor: 'text-primary', 
+          valueColor: 'text-primary', 
+          accentColor: 'bg-primary' 
+        },
+        { 
+          label: 'Total Students', 
+          value: String(stats.total_students || 0), 
+          icon: Users, 
+          iconBg: 'bg-secondary/10', 
+          iconColor: 'text-secondary', 
+          valueColor: 'text-secondary', 
+          accentColor: 'bg-secondary' 
+        },
+        { 
+          label: 'Enrollments', 
+          value: String(stats.total_enrollments || 0), 
+          icon: FileText, 
+          iconBg: 'bg-accent/10', 
+          iconColor: 'text-accent', 
+          valueColor: 'text-accent', 
+          accentColor: 'bg-accent' 
+        },
+        { 
+          label: 'Profile Views', 
+          value: String(stats.profile_views || 0), 
+          icon: Eye, 
+          iconBg: 'bg-nasa-gold/10', 
+          iconColor: 'text-nasa-gold', 
+          valueColor: 'text-nasa-gold', 
+          accentColor: 'bg-nasa-gold' 
+        },
       ],
     };
     return baseStats[role] || baseStats.freelancer;
-  }, [role]);
+  }, [role, dashboardStats]);
 
   // Quick actions based on role
   const quickActions = useMemo(() => {
     const baseActions = {
-      client: [
-        { title: 'POST NEW PROJECT', description: 'Create a new RPA project listing', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/register/project', badge: 'NEW', badgeColor: 'bg-primary/20 text-primary' },
-        { title: 'FIND TALENT', description: 'Browse verified RPA specialists', icon: Search, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: '/talent' },
-        { title: 'VIEW CONTRACTS', description: 'Manage active contracts', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: '/contracts', badge: '3 Active', badgeColor: 'bg-accent/20 text-accent' },
+      // HIRING ROLES - Quick actions for posting and managing
+      employer: [
+        { title: 'POST JOB', description: 'Create a new job listing', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/post-job' },
+        { title: 'MY JOBS', description: 'Manage your posted jobs', icon: Briefcase, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-jobs' },
+        { title: 'JOB APPLICATIONS', description: 'Review received applications', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'job-applications' },
       ],
+      client: [
+        { title: 'POST PROJECT', description: 'Create a new RPA project', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/register/project' },
+        { title: 'MY PROJECTS', description: 'Manage your posted projects', icon: Briefcase, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-projects' },
+        { title: 'PROJECT APPLICATIONS', description: 'Review received proposals', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'project-applications' },
+      ],
+      
+      // APPLYING ROLES - Quick actions for finding work
       freelancer: [
-        { title: 'BROWSE PROJECTS', description: 'Find new opportunities', icon: Target, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/projects', badge: '24 New', badgeColor: 'bg-primary/20 text-primary' },
-        { title: 'MY APPLICATIONS', description: 'Track your proposals', icon: FileText, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: '/applications', badge: '5 Pending', badgeColor: 'bg-secondary/20 text-secondary' },
-        { title: 'UPDATE PROFILE', description: 'Improve your visibility', icon: Settings, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: '/profile-setup' },
+        { title: 'BROWSE PROJECTS', description: 'Find new opportunities', icon: Target, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/projects' },
+        { title: 'MY APPLICATIONS', description: 'Track your proposals', icon: FileText, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'applications' },
+        { title: 'MY PORTFOLIO', description: 'Showcase your work', icon: Code, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'portfolio' },
       ],
       job_seeker: [
-        { title: 'JOB BOARD', description: 'Browse available positions', icon: Briefcase, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/jobs', badge: '150+ Jobs', badgeColor: 'bg-primary/20 text-primary' },
-        { title: 'MY APPLICATIONS', description: 'Track application status', icon: FileText, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: '/applications' },
-        { title: 'SAVED JOBS', description: 'View bookmarked positions', icon: Star, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: '/saved-jobs', badge: '15', badgeColor: 'bg-accent/20 text-accent' },
+        { title: 'BROWSE JOBS', description: 'Find job openings', icon: Briefcase, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/jobs' },
+        { title: 'MY APPLICATIONS', description: 'Track application status', icon: FileText, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'applications' },
+        { title: 'UPDATE PROFILE', description: 'Improve your visibility', icon: Settings, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'profile' },
       ],
       trainer: [
-        { title: 'CREATE COURSE', description: 'Design a new training program', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/create-course', badge: 'NEW', badgeColor: 'bg-primary/20 text-primary' },
-        { title: 'MY STUDENTS', description: 'Manage enrollments', icon: Users, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: '/students', badge: '156', badgeColor: 'bg-secondary/20 text-secondary' },
-        { title: 'ANALYTICS', description: 'View course performance', icon: BarChart3, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: '/analytics' },
+        { title: 'CREATE COURSE', description: 'Design a training program', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/create-course' },
+        { title: 'MY COURSES', description: 'Manage your courses', icon: GraduationCap, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-courses' },
+        { title: 'MY APPLICATIONS', description: 'Track applications', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'applications' },
+      ],
+      ba_pm: [
+        { title: 'BROWSE PROJECTS', description: 'Find PM opportunities', icon: Target, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/projects' },
+        { title: 'MY APPLICATIONS', description: 'Track your proposals', icon: FileText, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'applications' },
+        { title: 'UPDATE PROFILE', description: 'Improve your visibility', icon: Settings, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'profile' },
+      ],
+      developer: [
+        { title: 'BROWSE PROJECTS', description: 'Find dev opportunities', icon: Target, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/projects' },
+        { title: 'MY APPLICATIONS', description: 'Track your proposals', icon: FileText, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'applications' },
+        { title: 'UPDATE PROFILE', description: 'Improve your visibility', icon: Settings, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'profile' },
       ],
     };
     return baseActions[role] || baseActions.freelancer;
-  }, [role]);
+  }, [role, setCurrentSection]);
 
-  // Recent notifications
-  const notifications = useMemo(() => [
-    { message: 'New project matching your skills', time: '2 min ago', icon: Briefcase, iconBg: 'bg-primary/10', iconColor: 'text-primary', unread: true },
-    { message: 'Application viewed by TechCorp', time: '1 hour ago', icon: Eye, iconBg: 'bg-secondary/10', iconColor: 'text-secondary', unread: true },
-    { message: 'New message from Sarah', time: '3 hours ago', icon: MessageSquare, iconBg: 'bg-accent/10', iconColor: 'text-accent', unread: false },
-    { message: 'Profile completion reminder', time: 'Yesterday', icon: AlertCircle, iconBg: 'bg-nasa-gold/10', iconColor: 'text-nasa-gold', unread: false },
-  ], []);
+  // Format notifications for display
+  const formattedNotifications = useMemo(() => {
+    return notifications.slice(0, 4).map(n => ({
+      message: n.message || n.title || 'Notification',
+      time: n.created_at ? new Date(n.created_at).toLocaleString() : 'Recently',
+      icon: Briefcase,
+      iconBg: 'bg-primary/10',
+      iconColor: 'text-primary',
+      unread: !n.is_read
+    }));
+  }, [notifications]);
 
-  // Recent activity
-  const recentActivity = useMemo(() => [
-    { action: 'Applied to UiPath Developer position', time: '10 min ago', project: 'TechCorp Inc', statusColor: 'bg-primary' },
-    { action: 'Profile updated', time: '2 hours ago', statusColor: 'bg-secondary' },
-    { action: 'Completed skill assessment', time: 'Yesterday', project: 'UiPath Advanced', statusColor: 'bg-green-500' },
-    { action: 'New certification added', time: '2 days ago', project: 'AA Certified', statusColor: 'bg-accent' },
-  ], []);
+  // Format activity for display
+  const formattedActivity = useMemo(() => {
+    return recentActivity.slice(0, 4).map(a => ({
+      action: a.action || 'Activity',
+      time: a.time ? new Date(a.time).toLocaleString() : 'Recently',
+      project: a.action_url ? 'View' : undefined,
+      statusColor: 'bg-primary'
+    }));
+  }, [recentActivity]);
 
   if (loading) {
     return <PageLoader message="INITIALIZING DASHBOARD..." />;
   }
 
+  const renderContent = () => {
+    // Render inline content based on current section
+    switch (currentSection) {
+      case 'profile':
+        return <ProfileDashboard />;
+      case 'messages':
+        return <MessagesContent onClose={() => setCurrentSection('overview')} />;
+      case 'notifications':
+        return <NotificationsContent onClose={() => setCurrentSection('overview')} />;
+      case 'applications':
+        return <ApplicationsContent onClose={() => setCurrentSection('overview')} />;
+      case 'portfolio':
+        return <PortfolioContent onClose={() => setCurrentSection('overview')} />;
+      case 'settings':
+        return <SettingsContent onClose={() => setCurrentSection('overview')} />;
+      
+      // EMPLOYER SECTIONS
+      case 'my-jobs':
+        return <EmployerDashboard initialTab="jobs" />;
+      case 'job-applications':
+        return <EmployerDashboard initialTab="applications" />;
+      
+      // CLIENT SECTIONS
+      case 'my-projects':
+        return <ClientDashboard initialTab="projects" />;
+      case 'project-applications':
+        return <ClientDashboard initialTab="applications" />;
+      
+      // TRAINER SECTIONS
+      case 'my-courses':
+        return <TrainerDashboard />;
+      case 'overview':
+      default:
+        return (
+          <>
+            {/* Quick Actions */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-display font-bold text-foreground tracking-wider">QUICK ACTIONS</h2>
+                <button className="text-muted-foreground hover:text-foreground transition-colors">
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="grid md:grid-cols-3 gap-4">
+                {quickActions.map((action, index) => (
+                  <QuickActionCard 
+                    key={index} 
+                    action={action}
+                    onClick={() => {
+                      if (action.section) {
+                        setCurrentSection(action.section);
+                      } else if (action.link) {
+                        navigate(action.link);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid lg:grid-cols-3 gap-6 mb-8">
+              {/* Recent Activity */}
+              <div className="lg:col-span-2">
+                <Card className="tech-panel border-border bg-card/50 h-full">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg font-display tracking-wider">RECENT ACTIVITY</CardTitle>
+                      <button 
+                        onClick={() => setCurrentSection('notifications')}
+                        className="text-xs text-secondary hover:text-secondary/80 font-mono flex items-center gap-1"
+                      >
+                        VIEW ALL <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {formattedActivity.length > 0 ? (
+                      <div className="space-y-1">
+                        {formattedActivity.map((activity, index) => (
+                          <ActivityItem key={index} activity={activity} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No recent activity</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Notifications Panel */}
+              <Card className="tech-panel border-border bg-card/50">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-display tracking-wider">NOTIFICATIONS</CardTitle>
+                    {formattedNotifications.filter(n => n.unread).length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-primary text-white text-xs">
+                        {formattedNotifications.filter(n => n.unread).length}
+                      </span>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {formattedNotifications.length > 0 ? (
+                    <div className="space-y-1">
+                      {formattedNotifications.map((notification, index) => (
+                        <NotificationItem key={index} notification={notification} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No notifications</p>
+                  )}
+                  <button 
+                    onClick={() => setCurrentSection('notifications')}
+                    className="text-xs text-primary hover:underline mt-4 block"
+                  >
+                    View all notifications
+                  </button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Role-specific dashboard content */}
+            {renderDashboard()}
+          </>
+        );
+    }
+  };
+
   const renderDashboard = () => {
+    // Show role-specific dashboards for overview section
     switch (role) {
       case 'client':
         return <ClientDashboard />;
+      case 'employer':
+        return <EmployerDashboard />;
       case 'freelancer':
         return <FreelancerDashboard />;
       case 'developer':
@@ -350,7 +747,20 @@ export const Dashboard = memo(() => {
       {/* Top Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 tech-panel border-b border-border">
         <div className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            {/* Mobile Menu Toggle */}
+            <button 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg hover:bg-card transition-colors lg:hidden"
+              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            >
+              {sidebarOpen ? (
+                <X className="w-5 h-5 text-foreground" />
+              ) : (
+                <Menu className="w-5 h-5 text-foreground" />
+              )}
+            </button>
+            
             <Link to="/" className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <Rocket className="h-5 w-5 text-primary-foreground" />
@@ -359,28 +769,30 @@ export const Dashboard = memo(() => {
             </Link>
             
             {/* Search Bar */}
-            <div className="hidden lg:flex items-center gap-2 px-4 py-2 tech-panel rounded-xl w-80">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <input 
-                type="text" 
-                placeholder="Search projects, talent, jobs..."
-                className="bg-transparent border-none outline-none text-sm flex-1 text-foreground placeholder-muted-foreground"
-              />
-              <kbd className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs font-mono">⌘K</kbd>
-            </div>
+            <GlobalSearch />
           </div>
           
           <div className="flex items-center gap-3">
             <ThemeSwitcher />
             
-            <button className="relative p-2 rounded-lg hover:bg-card transition-colors">
+            <button 
+              onClick={() => setCurrentSection('notifications')}
+              className="relative p-2 rounded-lg hover:bg-card transition-colors"
+            >
               <Bell className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+              {unreadNotifications > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+              )}
             </button>
             
-            <button className="relative p-2 rounded-lg hover:bg-card transition-colors">
+            <button 
+              onClick={() => setCurrentSection('messages')}
+              className="relative p-2 rounded-lg hover:bg-card transition-colors"
+            >
               <MessageSquare className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full" />
+              {unreadMessages > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full" />
+              )}
             </button>
             
             <div className="h-8 w-px bg-border mx-2" />
@@ -408,8 +820,17 @@ export const Dashboard = memo(() => {
 
       {/* Main Layout */}
       <div className="flex pt-[73px]">
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+        
         {/* Sidebar */}
-        <aside className={`fixed left-0 top-[73px] bottom-0 w-64 tech-panel border-r border-border p-4 overflow-y-auto transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+        <aside className={`fixed left-0 top-[73px] bottom-0 w-64 tech-panel border-r border-border p-4 overflow-y-auto transition-transform duration-300 z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
           {/* User Profile Card */}
           <div className="tech-panel-strong rounded-xl p-4 mb-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
@@ -425,10 +846,13 @@ export const Dashboard = memo(() => {
             <div className="mt-4 pt-4 border-t border-border/50">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Profile Completion</span>
-                <span className="text-primary font-mono">75%</span>
+                <span className="text-primary font-mono">{profileCompletion}%</span>
               </div>
               <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-                <div className="h-full w-3/4 bg-gradient-to-r from-primary to-secondary rounded-full" />
+                <div 
+                  className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500" 
+                  style={{ width: `${profileCompletion}%` }}
+                />
               </div>
             </div>
           </div>
@@ -438,110 +862,50 @@ export const Dashboard = memo(() => {
             role={role} 
             currentSection={currentSection} 
             setCurrentSection={setCurrentSection}
+            unreadMessages={unreadMessages}
+            unreadNotifications={unreadNotifications}
+            onMobileNavClick={() => {
+              // Only close on mobile screens
+              if (window.innerWidth < 1024) {
+                setSidebarOpen(false);
+              }
+            }}
           />
         </aside>
 
         {/* Main Content */}
         <main className="flex-1 lg:ml-64 min-h-[calc(100vh-73px)]">
           <div className="p-6 lg:p-8">
-            {/* Welcome Header */}
-            <div className="mb-8">
-              <div className="inline-flex items-center gap-3 px-4 py-2 tech-panel rounded-full mb-4 border-glow-blue">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                </span>
-                <span className="text-xs font-mono text-secondary uppercase tracking-wider">Session Active • All Systems Operational</span>
-              </div>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {/* Welcome Header - Only show in overview */}
+            {currentSection === 'overview' && (
+              <div className="mb-8">
+                <div className="inline-flex items-center gap-3 px-4 py-2 tech-panel rounded-full mb-4 border-glow-blue">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                  </span>
+                  <span className="text-xs font-mono text-secondary uppercase tracking-wider">Session Active • All Systems Operational</span>
+                </div>
                 <div>
                   <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground tracking-wider mb-2">
                     WELCOME BACK, <span className="text-primary">{(profile.full_name || profile.name || 'OPERATOR').split(' ')[0]?.toUpperCase()}</span>
                   </h1>
                   <p className="text-muted-foreground">Here&apos;s what&apos;s happening with your RPA journey today.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" className="font-mono text-xs tracking-wider">
-                    <Filter className="w-4 h-4 mr-2" />
-                    FILTERS
-                  </Button>
-                  <Button className="bg-primary hover:bg-primary/90 font-mono text-xs tracking-wider glow-red">
-                    <Plus className="w-4 h-4 mr-2" />
-                    {role === 'client' ? 'POST PROJECT' : 'BROWSE PROJECTS'}
-                  </Button>
-                </div>
               </div>
-            </div>
+            )}
 
-            {/* Stats Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {statsData.map((stat, index) => (
-                <StatCard key={index} stat={stat} index={index} />
-              ))}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-display font-bold text-foreground tracking-wider">QUICK ACTIONS</h2>
-                <button className="text-muted-foreground hover:text-foreground transition-colors">
-                  <MoreHorizontal className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="grid md:grid-cols-3 gap-4">
-                {quickActions.map((action, index) => (
-                  <QuickActionCard 
-                    key={index} 
-                    action={action}
-                    onClick={() => action.link && navigate(action.link)}
-                  />
+            {/* Stats Grid - Only show in overview */}
+            {currentSection === 'overview' && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {statsData.map((stat, index) => (
+                  <StatCard key={index} stat={stat} index={index} />
                 ))}
               </div>
-            </div>
+            )}
 
-            {/* Main Content Grid */}
-            <div className="grid lg:grid-cols-3 gap-6 mb-8">
-              {/* Notifications */}
-              <div className="lg:col-span-2">
-                <Card className="tech-panel border-border bg-card/50 h-full">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg font-display tracking-wider">RECENT ACTIVITY</CardTitle>
-                      <Link to="/activity" className="text-xs text-secondary hover:text-secondary/80 font-mono flex items-center gap-1">
-                        VIEW ALL <ArrowUpRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-1">
-                      {recentActivity.map((activity, index) => (
-                        <ActivityItem key={index} activity={activity} />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Notifications Panel */}
-              <Card className="tech-panel border-border bg-card/50">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-display tracking-wider">NOTIFICATIONS</CardTitle>
-                    <span className="px-2 py-0.5 rounded-full bg-primary text-white text-xs">5</span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    {notifications.map((notification, index) => (
-                      <NotificationItem key={index} notification={notification} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Role-specific dashboard content */}
-            {renderDashboard()}
+            {/* Dynamic Content Based on Section */}
+            {renderContent()}
           </div>
         </main>
       </div>

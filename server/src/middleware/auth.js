@@ -121,3 +121,35 @@ export const generateRefreshToken = (userId) => {
   );
 };
 
+// Check if user is admin
+export const requireAdmin = async (req, res, next) => {
+  try {
+    if (!req.user || !req.userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Get user from users table to check is_admin
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('is_admin')
+      .eq('id', req.user.user_id)
+      .single();
+
+    if (error || !user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.is_admin) {
+      return res.status(403).json({ 
+        error: 'Admin access required',
+        message: 'This action requires administrator privileges'
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin check error:', error);
+    return res.status(500).json({ error: 'Failed to verify admin status' });
+  }
+};
+

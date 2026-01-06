@@ -2,7 +2,9 @@ import { useState, useEffect, memo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { profileApi, uploadApi } from '../services/api';
+import { useTaxonomy } from '../contexts/TaxonomyContext';
 import { sendEmailOTP, syncVerificationStatus } from '../services/supabaseAuth';
+import { isSupabaseConfigured } from '../config/supabase';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
@@ -25,14 +27,14 @@ const COUNTRIES = [
   'South Africa', 'New Zealand', 'Ireland', 'Poland', 'Other'
 ];
 
-// RPA Platforms
-const RPA_PLATFORMS = [
+// RPA Platforms (fallback if taxonomy not loaded)
+const RPA_PLATFORMS_FALLBACK = [
   'UiPath', 'Automation Anywhere', 'Blue Prism', 'Power Automate',
   'WorkFusion', 'Pega', 'Kofax', 'NICE', 'Appian', 'Nintex', 'Other'
 ];
 
-// Skills list
-const COMMON_SKILLS = [
+// Skills list (fallback if taxonomy not loaded)
+const COMMON_SKILLS_FALLBACK = [
   'RE Framework', 'Orchestrator', 'Bot Development', 'API Integration',
   'Web Scraping', 'Excel Automation', 'SAP Automation', 'Citrix Automation',
   'Document Understanding', 'IQ Bot', 'AI Center', 'Machine Learning',
@@ -82,12 +84,34 @@ export const ProfileSetupEnhanced = memo(() => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
+  
+  // Taxonomy data (platforms and skills with IDs)
+  const [platformsData, setPlatformsData] = useState([]);
+  const [skillsData, setSkillsData] = useState([]);
+  const [loadingTaxonomy, setLoadingTaxonomy] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
       navigate('/sign-in');
     }
   }, [isAuthenticated, user, navigate]);
+
+  // Use taxonomy context instead of fetching directly
+  const { platforms: contextPlatforms, skills: contextSkills, loading: taxonomyLoading, error: taxonomyError, refetch: refetchTaxonomy } = useTaxonomy();
+  const hasRefetchedRef = useRef(false);
+  
+  useEffect(() => {
+    setPlatformsData(contextPlatforms || []);
+    setSkillsData(contextSkills || []);
+    setLoadingTaxonomy(taxonomyLoading);
+    
+    // If there's an error and we haven't refetched yet, try once
+    if (taxonomyError && !hasRefetchedRef.current && contextPlatforms.length === 0 && contextSkills.length === 0) {
+      console.warn('Taxonomy fetch error, attempting refetch...');
+      hasRefetchedRef.current = true;
+      setTimeout(() => refetchTaxonomy(), 1000);
+    }
+  }, [contextPlatforms, contextSkills, taxonomyLoading, taxonomyError, refetchTaxonomy]);
 
   // Load existing profile data
   useEffect(() => {
@@ -108,6 +132,21 @@ export const ProfileSetupEnhanced = memo(() => {
             currentCompany: profile.current_company || prev.currentCompany,
             resumeUrl: profile.resume_url || prev.resumeUrl,
           }));
+          
+          // Load existing platforms and skills
+          if (profile.platforms && profile.platforms.length > 0) {
+            const platformNames = profile.platforms
+              .map(p => p.platform?.name)
+              .filter(Boolean);
+            setFormData(prev => ({ ...prev, selectedPlatforms: platformNames }));
+          }
+          
+          if (profile.skills && profile.skills.length > 0) {
+            const skillNames = profile.skills
+              .map(s => s.skill?.name)
+              .filter(Boolean);
+            setFormData(prev => ({ ...prev, selectedSkills: skillNames }));
+          }
           
           // Check verification status
           if (profile.user?.email_verified) setEmailVerified(true);
@@ -136,11 +175,16 @@ export const ProfileSetupEnhanced = memo(() => {
       return;
     }
 
+    if (!isSupabaseConfigured) {
+      toast.error('Email OTP is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+      return;
+    }
+
     setEmailOTPLoading(true);
     try {
       await sendEmailOTP(formData.email);
       setShowEmailOTP(true);
-      toast.success('OTP sent to your email');
+      toast.success('OTP sent! Check your email for the 8-digit code');
     } catch (error) {
       toast.error(error.message || 'Failed to send OTP');
     } finally {
@@ -238,6 +282,42 @@ export const ProfileSetupEnhanced = memo(() => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Helper function to find platform ID by name
+  const findPlatformId = (platformName) => {
+    // Try exact match first
+    let platform = platformsData.find(p => 
+      p.name.toLowerCase() === platformName.toLowerCase()
+    );
+    
+    // Try partial match
+    if (!platform) {
+      platform = platformsData.find(p => 
+        p.name.toLowerCase().includes(platformName.toLowerCase()) ||
+        platformName.toLowerCase().includes(p.name.toLowerCase())
+      );
+    }
+    
+    return platform?.id;
+  };
+
+  // Helper function to find skill ID by name
+  const findSkillId = (skillName) => {
+    // Try exact match first
+    let skill = skillsData.find(s => 
+      s.name.toLowerCase() === skillName.toLowerCase()
+    );
+    
+    // Try partial match
+    if (!skill) {
+      skill = skillsData.find(s => 
+        s.name.toLowerCase().includes(skillName.toLowerCase()) ||
+        skillName.toLowerCase().includes(s.name.toLowerCase())
+      );
+    }
+    
+    return skill?.id;
+  };
+
   // Submit
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) {
@@ -253,6 +333,7 @@ export const ProfileSetupEnhanced = memo(() => {
     // Final submission
     setIsSubmitting(true);
     try {
+      // Update basic profile data
       const profileData = {
         phone: formData.phone || null, // Optional
         alternate_phone: formData.alternatePhone || null,
@@ -267,8 +348,48 @@ export const ProfileSetupEnhanced = memo(() => {
 
       await profileApi.updateProfile(profileData);
 
-      // Add platforms and skills (if API supports it)
-      // This would be done via separate API calls
+      // Save platforms
+      if (formData.selectedPlatforms.length > 0) {
+        const platformPromises = formData.selectedPlatforms.map(async (platformName, index) => {
+          const platformId = findPlatformId(platformName);
+          if (platformId) {
+            try {
+              await profileApi.addPlatform({
+                platform_id: platformId,
+                proficiency_level: 'intermediate',
+                years_experience: parseInt(formData.rpaExperienceYears) || 0,
+                is_primary: index === 0 // First platform is primary
+              });
+            } catch (error) {
+              console.warn(`Failed to add platform ${platformName}:`, error);
+            }
+          } else {
+            console.warn(`Platform not found in taxonomy: ${platformName}`);
+          }
+        });
+        await Promise.all(platformPromises);
+      }
+
+      // Save skills
+      if (formData.selectedSkills.length > 0) {
+        const skillPromises = formData.selectedSkills.map(async (skillName) => {
+          const skillId = findSkillId(skillName);
+          if (skillId) {
+            try {
+              await profileApi.addSkill({
+                skill_id: skillId,
+                proficiency_level: 'intermediate',
+                years_experience: parseInt(formData.rpaExperienceYears) || 0
+              });
+            } catch (error) {
+              console.warn(`Failed to add skill ${skillName}:`, error);
+            }
+          } else {
+            console.warn(`Skill not found in taxonomy: ${skillName}`);
+          }
+        });
+        await Promise.all(skillPromises);
+      }
 
       toast.success('Profile setup completed successfully!');
       navigate('/dashboard');
@@ -329,7 +450,7 @@ export const ProfileSetupEnhanced = memo(() => {
                 CONTACT INFORMATION & VERIFICATION
               </CardTitle>
               <CardDescription>
-                Verify your email and phone number to secure your account
+                Verify your email address to secure your account. Email verification is mandatory.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -352,8 +473,9 @@ export const ProfileSetupEnhanced = memo(() => {
                   {!emailVerified && (
                     <Button
                       onClick={handleSendEmailOTP}
-                      disabled={emailOTPLoading || !formData.email}
+                      disabled={emailOTPLoading || !formData.email || !isSupabaseConfigured}
                       variant="outline"
+                      title={!isSupabaseConfigured ? 'Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY' : ''}
                     >
                       {emailOTPLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send OTP'}
                     </Button>
@@ -368,7 +490,16 @@ export const ProfileSetupEnhanced = memo(() => {
                   />
                 )}
                 {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-                {errors.emailVerified && <p className="text-red-500 text-sm">{errors.emailVerified}</p>}
+                {errors.emailVerified && (
+                  <p className="text-red-500 text-sm font-medium">
+                    {errors.emailVerified} You must verify your email to continue.
+                  </p>
+                )}
+                {!emailVerified && !showEmailOTP && (
+                  <p className="text-amber-500 text-sm">
+                    ⚠️ Email verification is required to proceed. Please verify your email address.
+                  </p>
+                )}
               </div>
 
               {/* Phone - Optional, no verification required */}
@@ -543,43 +674,57 @@ export const ProfileSetupEnhanced = memo(() => {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>RPA PLATFORMS *</Label>
-                <div className="flex flex-wrap gap-2">
-                  {RPA_PLATFORMS.map(platform => (
-                    <button
-                      key={platform}
-                      type="button"
-                      onClick={() => togglePlatform(platform)}
-                      className={`px-4 py-2 rounded-full text-sm font-mono transition-all ${
-                        formData.selectedPlatforms.includes(platform)
-                          ? 'bg-primary text-white'
-                          : 'tech-panel text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {platform}
-                    </button>
-                  ))}
-                </div>
+                {loadingTaxonomy && platformsData.length === 0 ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading platforms...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {(platformsData.length > 0 ? platformsData.map(p => p.name) : RPA_PLATFORMS_FALLBACK).map(platform => (
+                      <button
+                        key={platform}
+                        type="button"
+                        onClick={() => togglePlatform(platform)}
+                        className={`px-4 py-2 rounded-full text-sm font-mono transition-all ${
+                          formData.selectedPlatforms.includes(platform)
+                            ? 'bg-primary text-white'
+                            : 'tech-panel text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {platform}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {errors.platforms && <p className="text-red-500 text-sm">{errors.platforms}</p>}
               </div>
 
               <div className="space-y-2">
                 <Label>SKILLS *</Label>
-                <div className="flex flex-wrap gap-2">
-                  {COMMON_SKILLS.map(skill => (
-                    <button
-                      key={skill}
-                      type="button"
-                      onClick={() => toggleSkill(skill)}
-                      className={`px-4 py-2 rounded-full text-sm font-mono transition-all ${
-                        formData.selectedSkills.includes(skill)
-                          ? 'bg-secondary text-white'
-                          : 'tech-panel text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {skill}
-                    </button>
-                  ))}
-                </div>
+                {loadingTaxonomy && skillsData.length === 0 ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading skills...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {(skillsData.length > 0 ? skillsData.map(s => s.name) : COMMON_SKILLS_FALLBACK).map(skill => (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() => toggleSkill(skill)}
+                        className={`px-4 py-2 rounded-full text-sm font-mono transition-all ${
+                          formData.selectedSkills.includes(skill)
+                            ? 'bg-secondary text-white'
+                            : 'tech-panel text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {skill}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {errors.skills && <p className="text-red-500 text-sm">{errors.skills}</p>}
               </div>
             </CardContent>
@@ -651,16 +796,23 @@ export const ProfileSetupEnhanced = memo(() => {
 
         {/* Navigation */}
         <div className="flex justify-between mt-6">
-          <Button
-            variant="outline"
-            onClick={() => currentStep > 1 ? setCurrentStep(prev => prev - 1) : navigate('/dashboard')}
-          >
-            {currentStep > 1 ? 'Previous' : 'Skip for Now'}
-          </Button>
+          {currentStep > 1 ? (
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep(prev => prev - 1)}
+            >
+              Previous
+            </Button>
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              Email verification required to continue
+            </div>
+          )}
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="bg-primary hover:bg-primary/90"
+            disabled={isSubmitting || (currentStep === 1 && !emailVerified)}
+            className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={currentStep === 1 && !emailVerified ? 'Please verify your email address first' : ''}
           >
             {isSubmitting ? (
               <>

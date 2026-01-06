@@ -28,7 +28,22 @@ const fileFilter = (req, file, cb) => {
     resume: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
   };
 
-  const uploadType = req.params.type || 'image';
+  // Check if this is a Supabase upload route (has bucket param)
+  let uploadType;
+  if (req.params.bucket) {
+    // For Supabase routes, determine type based on bucket name
+    if (req.params.bucket === 'resumes') {
+      uploadType = 'resume';
+    } else if (req.params.bucket === 'avatars' || req.params.bucket === 'uploads') {
+      uploadType = 'image';
+    } else {
+      uploadType = 'image'; // default for unknown buckets
+    }
+  } else {
+    // For regular upload routes, use type param
+    uploadType = req.params.type || 'image';
+  }
+
   const allowed = allowedTypes[uploadType] || allowedTypes.image;
 
   if (allowed.includes(file.mimetype)) {
@@ -78,6 +93,55 @@ router.post('/:type', authenticateToken, upload.single('file'), asyncHandler(asy
   });
 }));
 
+// Helper function to ensure bucket exists
+const ensureBucketExists = async (bucketName) => {
+  try {
+    // Check if bucket exists by trying to list it
+    const { data: buckets, error: listError } = await supabaseAdmin.storage.listBuckets();
+    
+    if (listError) {
+      console.error('Error listing buckets:', listError);
+      return false;
+    }
+
+    const bucketExists = buckets?.some(b => b.name === bucketName);
+    
+    if (!bucketExists) {
+      // Try to create the bucket
+      // For resumes bucket, allow PDF and Word documents
+      const allowedMimeTypes = bucketName === 'resumes' 
+        ? ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+        : ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      
+      const { data, error: createError } = await supabaseAdmin.storage.createBucket(bucketName, {
+        public: true,
+        allowedMimeTypes: allowedMimeTypes,
+        fileSizeLimit: 5242880 // 5MB
+      });
+
+      if (createError) {
+        console.error(`Error creating bucket "${bucketName}":`, createError);
+        // If bucket creation fails, try with a simpler config
+        const { error: simpleError } = await supabaseAdmin.storage.createBucket(bucketName, {
+          public: true
+        });
+        
+        if (simpleError) {
+          console.error(`Failed to create bucket "${bucketName}" even with simple config:`, simpleError);
+          return false;
+        }
+      }
+      
+      console.log(`Bucket "${bucketName}" created successfully`);
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Error ensuring bucket exists:', err);
+    return false;
+  }
+};
+
 // Upload to Supabase Storage (alternative to local storage)
 router.post('/supabase/:bucket', authenticateToken, upload.single('file'), asyncHandler(async (req, res) => {
   if (!req.file) {
@@ -86,6 +150,14 @@ router.post('/supabase/:bucket', authenticateToken, upload.single('file'), async
 
   const { bucket } = req.params;
   const filePath = `${req.userId}/${req.file.filename}`;
+
+  // Ensure bucket exists
+  const bucketReady = await ensureBucketExists(bucket);
+  if (!bucketReady) {
+    return res.status(500).json({ 
+      error: `Storage bucket "${bucket}" not available. Please create it in Supabase dashboard.` 
+    });
+  }
 
   // Read file buffer
   const fs = await import('fs/promises');
@@ -104,7 +176,10 @@ router.post('/supabase/:bucket', authenticateToken, upload.single('file'), async
 
   if (error) {
     console.error('Supabase storage error:', error);
-    return res.status(500).json({ error: 'Failed to upload file' });
+    return res.status(500).json({ 
+      error: error.message || 'Failed to upload file to storage',
+      details: error.statusCode === '404' ? `Bucket "${bucket}" not found. Please create it in Supabase Storage.` : undefined
+    });
   }
 
   // Get public URL

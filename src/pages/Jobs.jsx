@@ -1,13 +1,19 @@
-import { memo, useMemo, useState, useCallback } from 'react';
+import { memo, useMemo, useState, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Filter, MapPin, Building2, Clock, DollarSign, Star,
   ChevronDown, CheckCircle, ArrowRight, Eye, Users, Briefcase,
   SlidersHorizontal, X, Grid3X3, List, Zap, Award, Globe,
-  BookmarkPlus, Heart, ExternalLink, Laptop, Building, Home as HomeIcon
+  BookmarkPlus, Heart, ExternalLink, Laptop, Building, Home as HomeIcon,
+  Loader2, Plus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { jobApi } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { useAuthStore } from '../store/authStore';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { useDebounce } from '../hooks/useDebounce';
 
 // ============================================================================
 // FILTER PILL COMPONENT
@@ -263,6 +269,10 @@ JobCard.displayName = 'JobCard';
 // MAIN JOBS PAGE COMPONENT
 // ============================================================================
 export const Jobs = memo(() => {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { user, role } = useAuthStore();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
   const [viewMode, setViewMode] = useState('list');
@@ -272,180 +282,108 @@ export const Jobs = memo(() => {
   const [selectedExperience, setSelectedExperience] = useState('all');
   const [savedJobs, setSavedJobs] = useState([]);
   const [sortBy, setSortBy] = useState('newest');
+  
+  // Debounce search queries
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  const debouncedLocationQuery = useDebounce(locationQuery, 500);
+  
+  // API state
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0
+  });
 
-  // Mock jobs data
-  const allJobs = useMemo(() => [
-    {
-      id: '1',
-      title: 'Senior UiPath Developer',
-      company: 'TechCorp Industries',
-      location: 'San Francisco, CA',
-      workType: 'Remote',
-      employmentType: 'Full-time',
-      experience: '5+ years',
-      salary: '$140,000 - $180,000',
-      description: 'We are looking for a Senior UiPath Developer to lead our automation initiatives. You will design, develop, and maintain RPA solutions for our enterprise clients.',
-      skills: ['UiPath', 'RE Framework', 'Orchestrator', 'SQL', 'Python', 'APIs'],
-      benefits: ['Health Insurance', '401(k)', 'Remote Work', 'Stock Options', 'Learning Budget'],
-      applicants: 45,
-      posted: '2 days ago',
-      featured: true,
-      urgent: true,
-      new: false,
-      rating: 4.8,
-    },
-    {
-      id: '2',
-      title: 'RPA Solution Architect',
-      company: 'AutomateNow Inc',
-      location: 'New York, NY',
-      workType: 'Hybrid',
-      employmentType: 'Full-time',
-      experience: '7+ years',
-      salary: '$160,000 - $200,000',
-      description: 'Join our team as an RPA Solution Architect to design scalable automation solutions and lead technical strategy across multiple enterprise clients.',
-      skills: ['UiPath', 'Automation Anywhere', 'Blue Prism', 'Architecture', 'Leadership'],
-      benefits: ['Health Insurance', 'Unlimited PTO', 'Equity', 'Remote Flexibility'],
-      applicants: 28,
-      posted: '1 week ago',
-      featured: true,
-      urgent: false,
-      new: false,
-      rating: 4.9,
-    },
-    {
-      id: '3',
-      title: 'Automation Anywhere Developer',
-      company: 'Digital First Solutions',
-      location: 'Chicago, IL',
-      workType: 'Remote',
-      employmentType: 'Full-time',
-      experience: '3-5 years',
-      salary: '$100,000 - $130,000',
-      description: 'Seeking an experienced AA Developer to build and maintain automation bots for our financial services clients.',
-      skills: ['Automation Anywhere', 'IQ Bot', 'Python', 'SQL', 'APIs'],
-      benefits: ['Health Insurance', '401(k) Match', 'Flexible Hours'],
-      applicants: 62,
-      posted: '3 days ago',
-      featured: false,
-      urgent: true,
-      new: true,
-      rating: 4.5,
-    },
-    {
-      id: '4',
-      title: 'Junior RPA Developer',
-      company: 'StartupBot Technologies',
-      location: 'Austin, TX',
-      workType: 'On-site',
-      employmentType: 'Full-time',
-      experience: '0-2 years',
-      salary: '$65,000 - $85,000',
-      description: 'Great opportunity for early career professionals! Join our growing team and learn from experienced RPA developers.',
-      skills: ['UiPath', 'Basic Programming', 'SQL', 'Excel'],
-      benefits: ['Health Insurance', 'Mentorship Program', 'Career Growth'],
-      applicants: 124,
-      posted: 'Just now',
-      featured: false,
-      urgent: false,
-      new: true,
-      rating: 4.3,
-    },
-    {
-      id: '5',
-      title: 'Blue Prism Technical Lead',
-      company: 'Enterprise Automation Corp',
-      location: 'Boston, MA',
-      workType: 'Hybrid',
-      employmentType: 'Full-time',
-      experience: '5-7 years',
-      salary: '$130,000 - $160,000',
-      description: 'Lead a team of Blue Prism developers and drive automation excellence across our global organization.',
-      skills: ['Blue Prism', 'Team Leadership', 'Process Mining', 'Agile'],
-      benefits: ['Comprehensive Benefits', 'Bonus', 'Stock Options', 'Flexible Schedule'],
-      applicants: 34,
-      posted: '5 days ago',
-      featured: false,
-      urgent: false,
-      new: false,
-      rating: 4.7,
-    },
-    {
-      id: '6',
-      title: 'RPA Business Analyst',
-      company: 'Global Consulting Partners',
-      location: 'Remote',
-      workType: 'Remote',
-      employmentType: 'Contract',
-      experience: '3+ years',
-      salary: '$70 - $90/hour',
-      description: 'Analyze business processes and identify automation opportunities for our Fortune 500 clients.',
-      skills: ['Process Analysis', 'Requirements Gathering', 'UiPath', 'Documentation'],
-      benefits: ['Flexible Hours', 'Remote Work', 'Diverse Projects'],
-      applicants: 89,
-      posted: '1 day ago',
-      featured: true,
-      urgent: false,
-      new: true,
-      rating: 4.6,
-    },
-  ], []);
+  // Reset pagination when search or filters change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [debouncedSearchQuery, debouncedLocationQuery, selectedWorkType, selectedEmploymentType, sortBy]);
 
-  // Filter jobs
+  // Fetch jobs from API
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      try {
+        const params = {
+          page: pagination.page,
+          limit: pagination.limit,
+          search: debouncedSearchQuery.trim() || undefined,
+          location: debouncedLocationQuery.trim() || undefined,
+          remote: selectedWorkType === 'Remote' ? 'true' : undefined,
+          type: selectedEmploymentType !== 'all' ? selectedEmploymentType.toLowerCase().replace('-', '_') : undefined,
+          sort: sortBy === 'newest' ? 'created_at' : sortBy === 'salary-high' ? 'salary_max' : 'created_at',
+          order: sortBy === 'salary-high' ? 'desc' : 'desc'
+        };
+
+        // Remove undefined params
+        Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+
+        const response = await jobApi.getAll(params);
+        setJobs(response.jobs || []);
+        setPagination(prev => ({
+          ...prev,
+          ...response.pagination
+        }));
+      } catch (error) {
+        console.error('Failed to fetch jobs:', error);
+        toast.error(error.error || 'Failed to load jobs');
+        setJobs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchQuery, debouncedLocationQuery, selectedWorkType, selectedEmploymentType, sortBy, pagination.page]);
+
+  // Transform backend job data to frontend format
+  const transformedJobs = useMemo(() => {
+    return jobs.map(job => ({
+      id: job.id,
+      title: job.title,
+      company: job.employer?.company_name || job.company_name || 'Company',
+      location: job.location || 'Not specified',
+      workType: job.is_remote ? 'Remote' : 'On-site',
+      employmentType: job.job_type?.replace('_', '-') || 'Full-time',
+      experience: 'Not specified', // Backend doesn't have this field yet
+      salary: job.salary_min && job.salary_max 
+        ? `₹${job.salary_min.toLocaleString()} - ₹${job.salary_max.toLocaleString()}`
+        : job.salary_min 
+          ? `₹${job.salary_min.toLocaleString()}+`
+          : 'Not specified',
+      description: job.description || '',
+      skills: job.technologies || [],
+      benefits: job.benefits || [],
+      applicants: job.application_count || 0,
+      posted: job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Recently',
+      featured: false, // Backend doesn't have this field yet
+      urgent: false, // Backend doesn't have this field yet
+      new: job.created_at ? (Date.now() - new Date(job.created_at).getTime()) < 7 * 24 * 60 * 60 * 1000 : false,
+      rating: null // Backend doesn't have this field yet
+    }));
+  }, [jobs]);
+
+  // Filter jobs (client-side filtering for experience since backend doesn't support it yet)
   const filteredJobs = useMemo(() => {
-    let result = [...allJobs];
+    let result = [...transformedJobs];
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(j => 
-        j.title.toLowerCase().includes(query) ||
-        j.company.toLowerCase().includes(query) ||
-        j.skills.some(s => s.toLowerCase().includes(query))
-      );
-    }
-
-    // Location filter
-    if (locationQuery) {
-      const query = locationQuery.toLowerCase();
-      result = result.filter(j => j.location.toLowerCase().includes(query));
-    }
-
-    // Work type filter
-    if (selectedWorkType !== 'all') {
-      result = result.filter(j => j.workType === selectedWorkType);
-    }
-
-    // Employment type filter
-    if (selectedEmploymentType !== 'all') {
-      result = result.filter(j => j.employmentType === selectedEmploymentType);
-    }
-
-    // Experience filter
+    // Experience filter (client-side only, backend doesn't support this yet)
     if (selectedExperience !== 'all') {
-      result = result.filter(j => j.experience.includes(selectedExperience));
+      // This would need to be implemented when backend adds experience field
+      // For now, skip this filter
     }
 
-    // Sort
-    switch (sortBy) {
-      case 'newest':
-        break; // Already sorted
-      case 'salary-high':
-        result.sort((a, b) => {
-          const aMax = parseInt(a.salary.replace(/[^0-9]/g, '')) || 0;
-          const bMax = parseInt(b.salary.replace(/[^0-9]/g, '')) || 0;
-          return bMax - aMax;
-        });
-        break;
-      case 'applicants':
-        result.sort((a, b) => a.applicants - b.applicants);
-        break;
-      default:
-        break;
+    // Sort (most sorting is done by backend, but we can do client-side for applicants)
+    if (sortBy === 'applicants') {
+      result.sort((a, b) => a.applicants - b.applicants);
     }
 
     return result;
-  }, [allJobs, searchQuery, locationQuery, selectedWorkType, selectedEmploymentType, selectedExperience, sortBy]);
+  }, [transformedJobs, selectedExperience, sortBy]);
 
   // Toggle save job
   const toggleSaveJob = useCallback((jobId) => {
@@ -484,9 +422,21 @@ export const Jobs = memo(() => {
                 RPA <span className="text-primary">JOB BOARD</span>
               </h1>
             </div>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Find your dream job in robotic process automation from top companies worldwide.
-            </p>
+            <div className="flex flex-col gap-3">
+              {(role === 'employer' || role === 'client') ? (
+                <Button
+                  onClick={() => navigate('/post-job')}
+                  className="bg-primary hover:bg-primary/90 font-mono text-xs tracking-wider"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  POST JOB
+                </Button>
+              ) : (
+                <p className="text-sm text-muted-foreground max-w-md text-right">
+                  Only employers and clients can post jobs. Looking for work? Browse available positions below.
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -587,18 +537,29 @@ export const Jobs = memo(() => {
         {/* Results Header */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-muted-foreground font-mono text-sm">
-            Showing <span className="text-foreground font-bold">{filteredJobs.length}</span> jobs
-            {savedJobs.length > 0 && (
-              <span className="ml-4 text-secondary">
-                <Heart className="w-4 h-4 inline mr-1 fill-secondary" />
-                {savedJobs.length} saved
-              </span>
+            {loading ? (
+              <span>Loading jobs...</span>
+            ) : (
+              <>
+                Showing <span className="text-foreground font-bold">{filteredJobs.length}</span> of{' '}
+                <span className="text-foreground font-bold">{pagination.total}</span> jobs
+                {savedJobs.length > 0 && (
+                  <span className="ml-4 text-secondary">
+                    <Heart className="w-4 h-4 inline mr-1 fill-secondary" />
+                    {savedJobs.length} saved
+                  </span>
+                )}
+              </>
             )}
           </p>
         </div>
 
         {/* Jobs */}
-        {filteredJobs.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner />
+          </div>
+        ) : filteredJobs.length > 0 ? (
           <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
             {filteredJobs.map((job) => (
               <JobCard 
@@ -623,13 +584,21 @@ export const Jobs = memo(() => {
           </Card>
         )}
 
-        {/* Load More */}
-        {filteredJobs.length > 0 && (
+        {/* Load More / Pagination */}
+        {!loading && filteredJobs.length > 0 && pagination.totalPages > pagination.page && (
           <div className="mt-6 text-center">
-            <Button variant="outline" size="lg" className="font-mono tracking-wider">
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="font-mono tracking-wider"
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+            >
               LOAD MORE JOBS
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Page {pagination.page} of {pagination.totalPages}
+            </p>
           </div>
         )}
       </div>

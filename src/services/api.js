@@ -144,9 +144,77 @@ const buildQueryString = (params) => {
   return queryString ? `?${queryString}` : '';
 };
 
+// ============================================================================
+// Request Deduplication
+// ============================================================================
+// Prevents duplicate concurrent requests to the same endpoint
+// If a request is in-flight, subsequent requests get the same promise
+const pendingRequests = new Map();
+
+const getRequestKey = (url, method, body) => {
+  // Only deduplicate GET requests (safe to cache)
+  if (method !== 'GET') return null;
+  return `${method}:${url}`;
+};
+
+const deduplicatedFetch = async (url, config) => {
+  const key = getRequestKey(url, config.method || 'GET', config.body);
+  
+  // If not a GET request, just execute normally
+  if (!key) {
+    const response = await fetch(url, config);
+    return handleResponse(response);
+  }
+  
+  // Check if there's already a pending request for this key
+  if (pendingRequests.has(key)) {
+    return pendingRequests.get(key);
+  }
+  
+  // Create new request and store the promise
+  const promise = fetch(url, config)
+    .then(handleResponse)
+    .finally(() => {
+      // Clean up after request completes
+      pendingRequests.delete(key);
+    });
+  
+  pendingRequests.set(key, promise);
+  return promise;
+};
+
+// ============================================================================
+// Simple In-Memory Cache for Frontend
+// ============================================================================
+const responseCache = new Map();
+const CACHE_TTL = 30000; // 30 seconds for frontend cache
+
+const getCachedResponse = (key) => {
+  const cached = responseCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  responseCache.delete(key);
+  return null;
+};
+
+const setCachedResponse = (key, data) => {
+  responseCache.set(key, { data, timestamp: Date.now() });
+  
+  // Cleanup old entries periodically (keep cache size manageable)
+  if (responseCache.size > 100) {
+    const now = Date.now();
+    for (const [k, v] of responseCache) {
+      if (now - v.timestamp > CACHE_TTL) {
+        responseCache.delete(k);
+      }
+    }
+  }
+};
+
 const apiRequest = async (endpoint, options = {}) => {
   const token = tokenManager.getToken();
-  const { params, ...restOptions } = options;
+  const { params, skipCache = false, ...restOptions } = options;
   
   const config = {
     headers: {
@@ -164,15 +232,44 @@ const apiRequest = async (endpoint, options = {}) => {
 
   const queryString = buildQueryString(params);
   const url = `${API_BASE_URL}${endpoint}${queryString}`;
+  
+  // Check frontend cache for GET requests
+  const isGet = !config.method || config.method === 'GET';
+  const cacheKey = `${url}:${token || 'anon'}`;
+  
+  if (isGet && !skipCache) {
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
 
   try {
-    const response = await fetch(url, config);
-    return await handleResponse(response);
+    const data = await deduplicatedFetch(url, config);
+    
+    // Cache successful GET responses
+    if (isGet) {
+      setCachedResponse(cacheKey, data);
+    }
+    
+    return data;
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
     }
     throw new ApiError('Network error. Please check your connection.', 0, { message: error.message });
+  }
+};
+
+// Export cache control for manual invalidation
+export const apiCache = {
+  clear: () => responseCache.clear(),
+  invalidate: (pattern) => {
+    for (const key of responseCache.keys()) {
+      if (key.includes(pattern)) {
+        responseCache.delete(key);
+      }
+    }
   }
 };
 
@@ -209,21 +306,24 @@ export const authApi = {
   refreshToken: (refreshToken) => api.post('/auth/refresh', { refreshToken }),
   getCurrentUser: () => api.get('/auth/me'),
   updatePassword: (passwords) => api.put('/auth/password', passwords),
+  recoverAccount: (email) => api.post('/auth/recover-account', { email }),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (email, newPassword, verificationToken, profileData) => {
+    const payload = { email, newPassword, verificationToken };
+    if (profileData) {
+      Object.assign(payload, profileData);
+    }
+    return api.post('/auth/reset-password', payload);
+  },
   
   // OAuth endpoints
   googleAuth: (googleToken) => api.post('/auth/google', { token: googleToken }),
-  githubAuth: (code) => api.post('/auth/github', { code }),
-  
-  // OAuth URL getters (for redirect flow)
-  getGoogleAuthUrl: () => api.get('/auth/google/url'),
-  getGithubAuthUrl: () => api.get('/auth/github/url'),
 };
 
 // =====================
 // GOOGLE OAUTH HELPER
 // =====================
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID;
 
 export const oAuthHelper = {
   // Initialize Google Sign-In
@@ -257,14 +357,23 @@ export const oAuthHelper = {
     });
   },
   
-  // Trigger Google Sign-In popup
+  // Trigger Google Sign-In popup (Simplified approach - direct popup)
   signInWithGoogle: async () => {
     const accounts = await oAuthHelper.initGoogleAuth();
     
     return new Promise((resolve, reject) => {
+      let callbackCalled = false;
+      let timeoutId;
+      
+      // Initialize Google Identity Services
       accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: (response) => {
+          if (callbackCalled) return; // Prevent duplicate calls
+          callbackCalled = true;
+          
+          if (timeoutId) clearTimeout(timeoutId);
+          
           if (response.credential) {
             resolve({ credential: response.credential });
           } else {
@@ -273,72 +382,83 @@ export const oAuthHelper = {
         },
         auto_select: false,
         cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: true, // Opt-in to FedCM for future compatibility
       });
       
-      // Show the One Tap or popup
+      // Use popup flow directly (more reliable than button click)
       accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Fallback to button click flow
-          const buttonDiv = document.createElement('div');
-          buttonDiv.id = 'google-signin-btn-temp';
-          buttonDiv.style.display = 'none';
-          document.body.appendChild(buttonDiv);
+        // Handle notification status
+        if (notification.isNotDisplayed()) {
+          // One Tap not displayed - create a visible button as fallback
+          const buttonContainer = document.createElement('div');
+          buttonContainer.id = 'google-signin-fallback';
+          buttonContainer.style.position = 'fixed';
+          buttonContainer.style.top = '50%';
+          buttonContainer.style.left = '50%';
+          buttonContainer.style.transform = 'translate(-50%, -50%)';
+          buttonContainer.style.zIndex = '10000';
+          buttonContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+          buttonContainer.style.padding = '20px';
+          buttonContainer.style.borderRadius = '8px';
+          document.body.appendChild(buttonContainer);
           
-          accounts.id.renderButton(buttonDiv, {
-            type: 'icon',
-            shape: 'circle',
+          accounts.id.renderButton(buttonContainer, {
+            type: 'standard',
+            theme: 'filled_blue',
+            size: 'large',
+            text: 'signin_with',
+            shape: 'rectangular',
           });
           
-          // Trigger click on the rendered button
-          const btn = buttonDiv.querySelector('div[role="button"]');
-          if (btn) {
-            btn.click();
-          }
+          // Auto-remove after 30 seconds if not clicked
+          timeoutId = setTimeout(() => {
+            if (buttonContainer.parentNode) {
+              buttonContainer.remove();
+            }
+            if (!callbackCalled) {
+              reject(new Error('Google sign-in timed out. Please try again.'));
+            }
+          }, 30000);
+        } else if (notification.isSkippedMoment()) {
+          // User skipped - show button
+          const buttonContainer = document.createElement('div');
+          buttonContainer.id = 'google-signin-fallback';
+          buttonContainer.style.position = 'fixed';
+          buttonContainer.style.top = '50%';
+          buttonContainer.style.left = '50%';
+          buttonContainer.style.transform = 'translate(-50%, -50%)';
+          buttonContainer.style.zIndex = '10000';
+          buttonContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+          buttonContainer.style.padding = '20px';
+          buttonContainer.style.borderRadius = '8px';
+          document.body.appendChild(buttonContainer);
           
-          // Cleanup
-          setTimeout(() => buttonDiv.remove(), 100);
+          accounts.id.renderButton(buttonContainer, {
+            type: 'standard',
+            theme: 'filled_blue',
+            size: 'large',
+            text: 'signin_with',
+            shape: 'rectangular',
+          });
+        } else if (notification.isDismissedMoment()) {
+          // User dismissed - reject
+          if (!callbackCalled) {
+            reject(new Error('Google sign-in was cancelled'));
+          }
         }
       });
+      
+      // Set a timeout for the entire operation
+      timeoutId = setTimeout(() => {
+        if (!callbackCalled) {
+          reject(new Error('Google sign-in timed out. Please try again.'));
+        }
+      }, 60000); // 60 second timeout
     });
-  },
-  
-  // GitHub OAuth (redirect flow)
-  signInWithGitHub: () => {
-    if (!GITHUB_CLIENT_ID) {
-      throw new Error('GitHub Client ID not configured');
-    }
-    
-    const redirectUri = `${window.location.origin}/auth/github/callback`;
-    const scope = 'read:user user:email';
-    const state = crypto.randomUUID();
-    
-    // Store state for verification
-    sessionStorage.setItem('github_oauth_state', state);
-    
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?` +
-      `client_id=${GITHUB_CLIENT_ID}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `scope=${encodeURIComponent(scope)}&` +
-      `state=${state}`;
-    
-    window.location.href = githubAuthUrl;
-  },
-  
-  // Handle GitHub callback
-  handleGitHubCallback: async (code, state) => {
-    const savedState = sessionStorage.getItem('github_oauth_state');
-    sessionStorage.removeItem('github_oauth_state');
-    
-    if (state !== savedState) {
-      throw new Error('Invalid OAuth state');
-    }
-    
-    return authApi.githubAuth(code);
   },
   
   // Check if OAuth is configured
   isGoogleConfigured: () => !!GOOGLE_CLIENT_ID,
-  isGitHubConfigured: () => !!GITHUB_CLIENT_ID,
 };
 
 // =====================
@@ -364,6 +484,9 @@ export const projectApi = {
   delete: (id) => api.delete(`/projects/${id}`),
   apply: (id, applicationData) => api.post(`/projects/${id}/apply`, applicationData),
   getMyProjects: (params) => api.get('/projects/me/projects', params),
+  getApplications: (projectId, params) => api.get(`/projects/${projectId}/applications`, params),
+  updateApplicationStatus: (projectId, applicationId, status, data) => api.put(`/projects/${projectId}/applications/${applicationId}`, { status, ...data }),
+  getApplicationStats: (projectId) => api.get(`/projects/${projectId}/applications/stats`),
 };
 
 // =====================
@@ -389,6 +512,9 @@ export const jobApi = {
   delete: (id) => api.delete(`/jobs/${id}`),
   apply: (id, applicationData) => api.post(`/jobs/${id}/apply`, applicationData),
   getMyPostings: (params) => api.get('/jobs/me/postings', params),
+  getApplications: (jobId, params) => api.get(`/jobs/${jobId}/applications`, params),
+  updateApplicationStatus: (jobId, applicationId, status, data) => api.put(`/jobs/${jobId}/applications/${applicationId}`, { status, ...data }),
+  getApplicationStats: (jobId) => api.get(`/jobs/${jobId}/applications/stats`),
 };
 
 // =====================
@@ -430,6 +556,47 @@ export const otpApi = {
 };
 
 // =====================
+// ADMIN API
+// =====================
+export const adminApi = {
+  // Stats
+  getStats: () => api.get('/admin/stats'),
+  
+  // Users
+  getUsers: (params) => api.get('/admin/users', params),
+  getUser: (id) => api.get(`/admin/users/${id}`),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  verifyUser: (id, data) => api.post(`/admin/users/${id}/verify`, data),
+  
+  // Jobs
+  getJobs: (params) => api.get('/admin/jobs', params),
+  updateJob: (id, data) => api.put(`/admin/jobs/${id}`, data),
+  deleteJob: (id) => api.delete(`/admin/jobs/${id}`),
+  
+  // Projects
+  getProjects: (params) => api.get('/admin/projects', params),
+  updateProject: (id, data) => api.put(`/admin/projects/${id}`, data),
+  deleteProject: (id) => api.delete(`/admin/projects/${id}`),
+  
+  // Platforms
+  getPlatforms: () => api.get('/admin/platforms'),
+  createPlatform: (data) => api.post('/admin/platforms', data),
+  updatePlatform: (id, data) => api.put(`/admin/platforms/${id}`, data),
+  deletePlatform: (id) => api.delete(`/admin/platforms/${id}`),
+  
+  // Skills
+  getSkills: () => api.get('/admin/skills'),
+  createSkill: (data) => api.post('/admin/skills', data),
+  updateSkill: (id, data) => api.put(`/admin/skills/${id}`, data),
+  deleteSkill: (id) => api.delete(`/admin/skills/${id}`),
+  
+  // Verification Requests
+  getVerificationRequests: (params) => api.get('/admin/verification-requests', params),
+  rejectVerificationRequest: (id, data) => api.post(`/admin/verification-requests/${id}/reject`, data),
+};
+
+// =====================
 // PROFILE API
 // =====================
 export const profileApi = {
@@ -437,6 +604,8 @@ export const profileApi = {
   getById: (id) => api.get(`/profiles/${id}`),
   getMyProfile: () => api.get('/profiles/me'),
   updateProfile: (data) => api.put('/profiles/me', data),
+  requestVerification: () => api.post('/profiles/me/request-verification'),
+  verifyProfile: (id, data) => api.post(`/profiles/${id}/verify`, data),
   
   // Platform expertise
   addPlatform: (data) => api.post('/profiles/me/platforms', data),
@@ -457,6 +626,7 @@ export const profileApi = {
   
   // Portfolio
   addPortfolio: (data) => api.post('/profiles/me/portfolio', data),
+  updatePortfolio: (portfolioId, data) => api.put(`/profiles/me/portfolio/${portfolioId}`, data),
   removePortfolio: (portfolioId) => api.delete(`/profiles/me/portfolio/${portfolioId}`),
 };
 
@@ -495,6 +665,16 @@ export const messageApi = {
   sendMessage: (conversationId, data) => api.post(`/messages/conversations/${conversationId}/messages`, data),
   deleteMessage: (convId, msgId) => api.delete(`/messages/conversations/${convId}/messages/${msgId}`),
   muteConversation: (id, isMuted) => api.patch(`/messages/conversations/${id}/mute`, { is_muted: isMuted }),
+};
+
+// =====================
+// STATS API
+// =====================
+export const statsApi = {
+  getDashboardStats: () => api.get('/stats/dashboard'),
+  getActivity: (params) => api.get('/stats/activity', params),
+  getRecommendedProjects: (params) => api.get('/stats/recommended-projects', params),
+  getRecommendedJobs: (params) => api.get('/stats/recommended-jobs', params),
 };
 
 // =====================

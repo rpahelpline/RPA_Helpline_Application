@@ -117,9 +117,9 @@ router.get('/:id', idValidation, asyncHandler(async (req, res) => {
 
   // Get completed projects count
   const { count: completedCount } = await supabaseAdmin
-    .from('applications')
+    .from('project_applications')
     .select('*', { count: 'exact', head: true })
-    .eq('freelancer_id', freelancer.user_id)
+    .eq('applicant_id', freelancer.user_id)
     .eq('status', 'completed');
 
   freelancer.completed_projects = completedCount || 0;
@@ -218,8 +218,8 @@ router.put('/me/profile', authenticateToken, requireRole('freelancer', 'develope
   });
 }));
 
-// Get my applications
-router.get('/me/applications', authenticateToken, requireRole('freelancer', 'developer'), paginationValidation, asyncHandler(async (req, res) => {
+// Get my applications (for all applying roles)
+router.get('/me/applications', authenticateToken, requireRole('freelancer', 'developer', 'job_seeker', 'jobseeker', 'trainer', 'ba_pm'), paginationValidation, asyncHandler(async (req, res) => {
   const { 
     page = PAGINATION.DEFAULT_PAGE, 
     limit = PAGINATION.DEFAULT_LIMIT,
@@ -228,36 +228,97 @@ router.get('/me/applications', authenticateToken, requireRole('freelancer', 'dev
 
   const offset = (page - 1) * limit;
 
-  let query = supabaseAdmin
-    .from('applications')
+  // Fetch project applications
+  // Note: project_applications uses freelancer_id, not applicant_id
+  let projectQuery = supabaseAdmin
+    .from('project_applications')
     .select(`
       *,
-      project:projects(id, title, budget_min, budget_max, status, urgency)
+      project:projects(id, title, budget_min, budget_max, status, urgency, location, work_arrangement)
     `, { count: 'exact' })
     .eq('freelancer_id', req.userId);
 
   if (status) {
-    query = query.eq('status', status);
+    projectQuery = projectQuery.eq('status', status);
   }
 
-  query = query
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+  const { data: projectApplications, error: projectError } = await projectQuery;
 
-  const { data: applications, error, count } = await query;
+  // Fetch job applications
+  let jobQuery = supabaseAdmin
+    .from('job_applications')
+    .select(`
+      *,
+      job:jobs(id, title, salary_min, salary_max, work_arrangement, employment_type, locations)
+    `, { count: 'exact' })
+    .eq('applicant_id', req.userId);
 
-  if (error) {
-    console.error('Error fetching applications:', error);
-    return res.status(500).json({ error: 'Failed to fetch applications' });
+  if (status) {
+    jobQuery = jobQuery.eq('status', status);
   }
+
+  const { data: jobApplications, error: jobError } = await jobQuery;
+
+  if (projectError) {
+    console.error('Error fetching project applications:', projectError);
+    // Don't fail completely, just log and continue with empty array
+  }
+  
+  if (jobError) {
+    console.error('Error fetching job applications:', jobError);
+    // Don't fail completely, just log and continue with empty array
+  }
+  
+  // If both queries failed, return error
+  if (projectError && jobError) {
+    return res.status(500).json({ 
+      error: 'Failed to fetch applications',
+      details: {
+        projectError: projectError.message,
+        jobError: jobError.message
+      }
+    });
+  }
+
+  // Combine and format applications
+  const allApplications = [
+    ...(projectApplications || []).map(app => ({
+      ...app,
+      type: 'project',
+      job_id: null,
+      // Map work_arrangement to is_remote for compatibility
+      project: app.project ? {
+        ...app.project,
+        is_remote: app.project.work_arrangement === 'remote'
+      } : app.project
+    })),
+    ...(jobApplications || []).map(app => ({
+      ...app,
+      type: 'job',
+      project_id: null,
+      // Map work_arrangement to is_remote and employment_type to job_type for compatibility
+      job: app.job ? {
+        ...app.job,
+        is_remote: app.job.work_arrangement === 'remote',
+        job_type: app.job.employment_type,
+        location: app.job.locations && Array.isArray(app.job.locations) && app.job.locations.length > 0
+          ? app.job.locations[0].city || app.job.locations[0].country || 'Location TBD'
+          : null
+      } : app.job
+    }))
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  // Apply pagination manually
+  const total = allApplications.length;
+  const paginatedApplications = allApplications.slice(offset, offset + limit);
 
   res.json({
-    applications,
+    applications: paginatedApplications,
     pagination: {
       page: parseInt(page),
       limit: parseInt(limit),
-      total: count,
-      totalPages: Math.ceil(count / limit)
+      total,
+      totalPages: Math.ceil(total / limit)
     }
   });
 }));

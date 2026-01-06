@@ -18,7 +18,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For fuzzy text search
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255), -- Nullable to support OAuth users (Google, etc.)
   email_verified BOOLEAN DEFAULT false,
   email_verified_at TIMESTAMP WITH TIME ZONE,
   phone VARCHAR(20),
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_active ON users(is_active);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
 
 -- ---------------------------------------------------------------------------
 -- 1.2 USER PROFILES TABLE (Common profile info)
@@ -90,10 +90,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_profiles_user ON profiles(user_id);
-CREATE INDEX idx_profiles_type ON profiles(user_type);
-CREATE INDEX idx_profiles_location ON profiles(country, city);
-CREATE INDEX idx_profiles_available ON profiles(is_available);
+CREATE INDEX IF NOT EXISTS idx_profiles_user ON profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_type ON profiles(user_type);
+CREATE INDEX IF NOT EXISTS idx_profiles_location ON profiles(country, city);
+CREATE INDEX IF NOT EXISTS idx_profiles_available ON profiles(is_available);
 
 -- ============================================================================
 -- SECTION 2: RPA TECHNOLOGY & SKILLS TAXONOMY
@@ -286,10 +286,10 @@ CREATE TABLE IF NOT EXISTS freelancer_profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_freelancer_profile ON freelancer_profiles(profile_id);
-CREATE INDEX idx_freelancer_rate ON freelancer_profiles(hourly_rate_min, hourly_rate_max);
-CREATE INDEX idx_freelancer_availability ON freelancer_profiles(availability_status);
-CREATE INDEX idx_freelancer_rating ON freelancer_profiles(average_rating DESC);
+CREATE INDEX IF NOT EXISTS idx_freelancer_profile ON freelancer_profiles(profile_id);
+CREATE INDEX IF NOT EXISTS idx_freelancer_rate ON freelancer_profiles(hourly_rate_min, hourly_rate_max);
+CREATE INDEX IF NOT EXISTS idx_freelancer_availability ON freelancer_profiles(availability_status);
+CREATE INDEX IF NOT EXISTS idx_freelancer_rating ON freelancer_profiles(average_rating DESC);
 
 -- ---------------------------------------------------------------------------
 -- 3.2 JOB SEEKER PROFILES (Looking for RPA employment)
@@ -338,9 +338,9 @@ CREATE TABLE IF NOT EXISTS job_seeker_profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_job_seeker_profile ON job_seeker_profiles(profile_id);
-CREATE INDEX idx_job_seeker_active ON job_seeker_profiles(actively_looking);
-CREATE INDEX idx_job_seeker_salary ON job_seeker_profiles(expected_salary_min, expected_salary_max);
+CREATE INDEX IF NOT EXISTS idx_job_seeker_profile ON job_seeker_profiles(profile_id);
+CREATE INDEX IF NOT EXISTS idx_job_seeker_active ON job_seeker_profiles(actively_looking);
+CREATE INDEX IF NOT EXISTS idx_job_seeker_salary ON job_seeker_profiles(expected_salary_min, expected_salary_max);
 
 -- ---------------------------------------------------------------------------
 -- 3.3 TRAINER PROFILES (RPA Training providers)
@@ -386,8 +386,8 @@ CREATE TABLE IF NOT EXISTS trainer_profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_trainer_profile ON trainer_profiles(profile_id);
-CREATE INDEX idx_trainer_rating ON trainer_profiles(average_rating DESC);
+CREATE INDEX IF NOT EXISTS idx_trainer_profile ON trainer_profiles(profile_id);
+CREATE INDEX IF NOT EXISTS idx_trainer_rating ON trainer_profiles(average_rating DESC);
 
 -- ---------------------------------------------------------------------------
 -- 3.4 BA/PM PROFILES (Business Analysts & Project Managers)
@@ -437,8 +437,8 @@ CREATE TABLE IF NOT EXISTS ba_pm_profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_ba_pm_profile ON ba_pm_profiles(profile_id);
-CREATE INDEX idx_ba_pm_role ON ba_pm_profiles(primary_role);
+CREATE INDEX IF NOT EXISTS idx_ba_pm_profile ON ba_pm_profiles(profile_id);
+CREATE INDEX IF NOT EXISTS idx_ba_pm_role ON ba_pm_profiles(primary_role);
 
 -- ---------------------------------------------------------------------------
 -- 3.5 CLIENT PROFILES (Hire freelancers for projects)
@@ -481,9 +481,9 @@ CREATE TABLE IF NOT EXISTS client_profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_client_profile ON client_profiles(profile_id);
-CREATE INDEX idx_client_company ON client_profiles(company_name);
-CREATE INDEX idx_client_verified ON client_profiles(company_verified, payment_verified);
+CREATE INDEX IF NOT EXISTS idx_client_profile ON client_profiles(profile_id);
+CREATE INDEX IF NOT EXISTS idx_client_company ON client_profiles(company_name);
+CREATE INDEX IF NOT EXISTS idx_client_verified ON client_profiles(company_verified, payment_verified);
 
 -- ---------------------------------------------------------------------------
 -- 3.6 EMPLOYER PROFILES (Post full-time jobs)
@@ -528,8 +528,8 @@ CREATE TABLE IF NOT EXISTS employer_profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_employer_profile ON employer_profiles(profile_id);
-CREATE INDEX idx_employer_company ON employer_profiles(company_name);
+CREATE INDEX IF NOT EXISTS idx_employer_profile ON employer_profiles(profile_id);
+CREATE INDEX IF NOT EXISTS idx_employer_company ON employer_profiles(company_name);
 
 -- ============================================================================
 -- SECTION 4: PROFILE SKILLS & CERTIFICATIONS
@@ -549,8 +549,8 @@ CREATE TABLE IF NOT EXISTS user_platforms (
   UNIQUE(profile_id, platform_id)
 );
 
-CREATE INDEX idx_user_platforms_profile ON user_platforms(profile_id);
-CREATE INDEX idx_user_platforms_platform ON user_platforms(platform_id);
+CREATE INDEX IF NOT EXISTS idx_user_platforms_profile ON user_platforms(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_platforms_platform ON user_platforms(platform_id);
 
 -- ---------------------------------------------------------------------------
 -- 4.2 USER SKILLS
@@ -567,8 +567,8 @@ CREATE TABLE IF NOT EXISTS user_skills (
   UNIQUE(profile_id, skill_id)
 );
 
-CREATE INDEX idx_user_skills_profile ON user_skills(profile_id);
-CREATE INDEX idx_user_skills_skill ON user_skills(skill_id);
+CREATE INDEX IF NOT EXISTS idx_user_skills_profile ON user_skills(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_skills_skill ON user_skills(skill_id);
 
 -- ---------------------------------------------------------------------------
 -- 4.3 USER CERTIFICATIONS
@@ -587,7 +587,7 @@ CREATE TABLE IF NOT EXISTS user_certifications (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_user_certs_profile ON user_certifications(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_certs_profile ON user_certifications(profile_id);
 
 -- ---------------------------------------------------------------------------
 -- 4.4 USER WORK EXPERIENCE
@@ -613,8 +613,8 @@ CREATE TABLE IF NOT EXISTS user_experience (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_user_exp_profile ON user_experience(profile_id);
-CREATE INDEX idx_user_exp_dates ON user_experience(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_user_exp_profile ON user_experience(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_exp_dates ON user_experience(start_date, end_date);
 
 -- ---------------------------------------------------------------------------
 -- 4.5 USER EDUCATION
@@ -638,7 +638,7 @@ CREATE TABLE IF NOT EXISTS user_education (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_user_edu_profile ON user_education(profile_id);
+CREATE INDEX IF NOT EXISTS idx_user_edu_profile ON user_education(profile_id);
 
 -- ---------------------------------------------------------------------------
 -- 4.6 USER PORTFOLIO ITEMS
@@ -683,8 +683,8 @@ CREATE TABLE IF NOT EXISTS user_portfolio (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_portfolio_profile ON user_portfolio(profile_id);
-CREATE INDEX idx_portfolio_featured ON user_portfolio(is_featured);
+CREATE INDEX IF NOT EXISTS idx_portfolio_profile ON user_portfolio(profile_id);
+CREATE INDEX IF NOT EXISTS idx_portfolio_featured ON user_portfolio(is_featured);
 
 -- ============================================================================
 -- SECTION 5: OPPORTUNITIES (Projects, Jobs, Training)
@@ -766,12 +766,12 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_projects_client ON projects(client_id);
-CREATE INDEX idx_projects_status ON projects(status);
-CREATE INDEX idx_projects_type ON projects(project_type);
-CREATE INDEX idx_projects_urgency ON projects(urgency);
-CREATE INDEX idx_projects_budget ON projects(budget_min, budget_max);
-CREATE INDEX idx_projects_published ON projects(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_projects_client ON projects(client_id);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+CREATE INDEX IF NOT EXISTS idx_projects_type ON projects(project_type);
+CREATE INDEX IF NOT EXISTS idx_projects_urgency ON projects(urgency);
+CREATE INDEX IF NOT EXISTS idx_projects_budget ON projects(budget_min, budget_max);
+CREATE INDEX IF NOT EXISTS idx_projects_published ON projects(published_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- 5.2 JOBS (Full-time/Part-time employment)
@@ -832,11 +832,11 @@ CREATE TABLE IF NOT EXISTS jobs (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_jobs_employer ON jobs(employer_id);
-CREATE INDEX idx_jobs_status ON jobs(status);
-CREATE INDEX idx_jobs_type ON jobs(employment_type);
-CREATE INDEX idx_jobs_salary ON jobs(salary_min, salary_max);
-CREATE INDEX idx_jobs_published ON jobs(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_jobs_employer ON jobs(employer_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_type ON jobs(employment_type);
+CREATE INDEX IF NOT EXISTS idx_jobs_salary ON jobs(salary_min, salary_max);
+CREATE INDEX IF NOT EXISTS idx_jobs_published ON jobs(published_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- 5.3 TRAINING PROGRAMS (Courses offered by trainers)
@@ -922,12 +922,12 @@ CREATE TABLE IF NOT EXISTS training_programs (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_training_trainer ON training_programs(trainer_id);
-CREATE INDEX idx_training_status ON training_programs(status);
-CREATE INDEX idx_training_category ON training_programs(category);
-CREATE INDEX idx_training_format ON training_programs(format);
-CREATE INDEX idx_training_price ON training_programs(price);
-CREATE INDEX idx_training_rating ON training_programs(average_rating DESC);
+CREATE INDEX IF NOT EXISTS idx_training_trainer ON training_programs(trainer_id);
+CREATE INDEX IF NOT EXISTS idx_training_status ON training_programs(status);
+CREATE INDEX IF NOT EXISTS idx_training_category ON training_programs(category);
+CREATE INDEX IF NOT EXISTS idx_training_format ON training_programs(format);
+CREATE INDEX IF NOT EXISTS idx_training_price ON training_programs(price);
+CREATE INDEX IF NOT EXISTS idx_training_rating ON training_programs(average_rating DESC);
 
 -- ---------------------------------------------------------------------------
 -- 5.4 TRAINING REQUESTS (Companies/Individuals seeking training)
@@ -981,9 +981,9 @@ CREATE TABLE IF NOT EXISTS training_requests (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_training_req_requester ON training_requests(requester_id);
-CREATE INDEX idx_training_req_status ON training_requests(status);
-CREATE INDEX idx_training_req_type ON training_requests(request_type);
+CREATE INDEX IF NOT EXISTS idx_training_req_requester ON training_requests(requester_id);
+CREATE INDEX IF NOT EXISTS idx_training_req_status ON training_requests(status);
+CREATE INDEX IF NOT EXISTS idx_training_req_type ON training_requests(request_type);
 
 -- ============================================================================
 -- SECTION 6: APPLICATIONS & MATCHING
@@ -1037,9 +1037,9 @@ CREATE TABLE IF NOT EXISTS project_applications (
   UNIQUE(project_id, freelancer_id)
 );
 
-CREATE INDEX idx_proj_app_project ON project_applications(project_id);
-CREATE INDEX idx_proj_app_freelancer ON project_applications(freelancer_id);
-CREATE INDEX idx_proj_app_status ON project_applications(status);
+CREATE INDEX IF NOT EXISTS idx_proj_app_project ON project_applications(project_id);
+CREATE INDEX IF NOT EXISTS idx_proj_app_freelancer ON project_applications(freelancer_id);
+CREATE INDEX IF NOT EXISTS idx_proj_app_status ON project_applications(status);
 
 -- ---------------------------------------------------------------------------
 -- 6.2 JOB APPLICATIONS
@@ -1093,9 +1093,9 @@ CREATE TABLE IF NOT EXISTS job_applications (
   UNIQUE(job_id, applicant_id)
 );
 
-CREATE INDEX idx_job_app_job ON job_applications(job_id);
-CREATE INDEX idx_job_app_applicant ON job_applications(applicant_id);
-CREATE INDEX idx_job_app_status ON job_applications(status);
+CREATE INDEX IF NOT EXISTS idx_job_app_job ON job_applications(job_id);
+CREATE INDEX IF NOT EXISTS idx_job_app_applicant ON job_applications(applicant_id);
+CREATE INDEX IF NOT EXISTS idx_job_app_status ON job_applications(status);
 
 -- ---------------------------------------------------------------------------
 -- 6.3 TRAINING ENROLLMENTS
@@ -1139,9 +1139,9 @@ CREATE TABLE IF NOT EXISTS training_enrollments (
   UNIQUE(program_id, student_id)
 );
 
-CREATE INDEX idx_enrollment_program ON training_enrollments(program_id);
-CREATE INDEX idx_enrollment_student ON training_enrollments(student_id);
-CREATE INDEX idx_enrollment_status ON training_enrollments(status);
+CREATE INDEX IF NOT EXISTS idx_enrollment_program ON training_enrollments(program_id);
+CREATE INDEX IF NOT EXISTS idx_enrollment_student ON training_enrollments(student_id);
+CREATE INDEX IF NOT EXISTS idx_enrollment_status ON training_enrollments(status);
 
 -- ---------------------------------------------------------------------------
 -- 6.4 TRAINING PROPOSALS (Trainers responding to requests)
@@ -1180,8 +1180,8 @@ CREATE TABLE IF NOT EXISTS training_proposals (
   UNIQUE(request_id, trainer_id)
 );
 
-CREATE INDEX idx_training_prop_request ON training_proposals(request_id);
-CREATE INDEX idx_training_prop_trainer ON training_proposals(trainer_id);
+CREATE INDEX IF NOT EXISTS idx_training_prop_request ON training_proposals(request_id);
+CREATE INDEX IF NOT EXISTS idx_training_prop_trainer ON training_proposals(trainer_id);
 
 -- ============================================================================
 -- SECTION 7: CONTRACTS & PAYMENTS
@@ -1243,10 +1243,10 @@ CREATE TABLE IF NOT EXISTS contracts (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_contracts_client ON contracts(client_id);
-CREATE INDEX idx_contracts_provider ON contracts(provider_id);
-CREATE INDEX idx_contracts_status ON contracts(status);
-CREATE INDEX idx_contracts_type ON contracts(contract_type);
+CREATE INDEX IF NOT EXISTS idx_contracts_client ON contracts(client_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_provider ON contracts(provider_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_status ON contracts(status);
+CREATE INDEX IF NOT EXISTS idx_contracts_type ON contracts(contract_type);
 
 -- ---------------------------------------------------------------------------
 -- 7.2 INVOICES
@@ -1299,10 +1299,10 @@ CREATE TABLE IF NOT EXISTS invoices (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_invoices_from ON invoices(from_user_id);
-CREATE INDEX idx_invoices_to ON invoices(to_user_id);
-CREATE INDEX idx_invoices_status ON invoices(status);
-CREATE INDEX idx_invoices_due ON invoices(due_date);
+CREATE INDEX IF NOT EXISTS idx_invoices_from ON invoices(from_user_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_to ON invoices(to_user_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_due ON invoices(due_date);
 
 -- ============================================================================
 -- SECTION 8: REVIEWS & RATINGS
@@ -1361,10 +1361,10 @@ CREATE TABLE IF NOT EXISTS reviews (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_reviews_reviewer ON reviews(reviewer_id);
-CREATE INDEX idx_reviews_reviewee ON reviews(reviewee_id);
-CREATE INDEX idx_reviews_type ON reviews(review_type);
-CREATE INDEX idx_reviews_rating ON reviews(overall_rating);
+CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_reviewee ON reviews(reviewee_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_type ON reviews(review_type);
+CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(overall_rating);
 
 -- ============================================================================
 -- SECTION 9: MESSAGING & COMMUNICATION
@@ -1404,9 +1404,9 @@ CREATE TABLE IF NOT EXISTS conversations (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_conversations_type ON conversations(conversation_type);
-CREATE INDEX idx_conversations_project ON conversations(project_id);
-CREATE INDEX idx_conversations_job ON conversations(job_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_type ON conversations(conversation_type);
+CREATE INDEX IF NOT EXISTS idx_conversations_project ON conversations(project_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_job ON conversations(job_id);
 
 -- ---------------------------------------------------------------------------
 -- 9.2 CONVERSATION PARTICIPANTS
@@ -1435,8 +1435,8 @@ CREATE TABLE IF NOT EXISTS conversation_participants (
   UNIQUE(conversation_id, user_id)
 );
 
-CREATE INDEX idx_conv_part_conversation ON conversation_participants(conversation_id);
-CREATE INDEX idx_conv_part_user ON conversation_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_conv_part_conversation ON conversation_participants(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conv_part_user ON conversation_participants(user_id);
 
 -- ---------------------------------------------------------------------------
 -- 9.3 MESSAGES
@@ -1465,9 +1465,9 @@ CREATE TABLE IF NOT EXISTS messages (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_messages_conversation ON messages(conversation_id);
-CREATE INDEX idx_messages_sender ON messages(sender_id);
-CREATE INDEX idx_messages_created ON messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at DESC);
 
 -- ============================================================================
 -- SECTION 10: NOTIFICATIONS
@@ -1506,9 +1506,9 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_notifications_user ON notifications(user_id);
-CREATE INDEX idx_notifications_unread ON notifications(user_id, is_read) WHERE is_read = false;
-CREATE INDEX idx_notifications_type ON notifications(notification_type);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, is_read) WHERE is_read = false;
+CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(notification_type);
 
 -- ============================================================================
 -- SECTION 11: SAVED/FAVORITES
@@ -1530,8 +1530,8 @@ CREATE TABLE IF NOT EXISTS saved_items (
   UNIQUE(user_id, item_type, item_id)
 );
 
-CREATE INDEX idx_saved_user ON saved_items(user_id);
-CREATE INDEX idx_saved_type ON saved_items(item_type, item_id);
+CREATE INDEX IF NOT EXISTS idx_saved_user ON saved_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_type ON saved_items(item_type, item_id);
 
 -- ============================================================================
 -- SECTION 12: ACTIVITY LOG
@@ -1559,9 +1559,9 @@ CREATE TABLE IF NOT EXISTS activity_log (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_activity_user ON activity_log(user_id);
-CREATE INDEX idx_activity_type ON activity_log(activity_type);
-CREATE INDEX idx_activity_created ON activity_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_type ON activity_log(activity_type);
+CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log(created_at DESC);
 
 -- ============================================================================
 -- SECTION 13: ROW LEVEL SECURITY (RLS)
@@ -1638,6 +1638,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_stats_on_review ON reviews;
 CREATE TRIGGER update_stats_on_review
   AFTER INSERT OR UPDATE ON reviews
   FOR EACH ROW EXECUTE FUNCTION update_profile_stats();

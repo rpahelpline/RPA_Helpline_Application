@@ -15,7 +15,7 @@ export const OTPVerification = memo(({
   onCancel,
   label
 }) => {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '', '', '', '', '']); // 8 digits for Supabase
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -48,12 +48,12 @@ export const OTPVerification = memo(({
     setError('');
 
     // Auto-focus next input
-    if (value && index < 5) {
+    if (value && index < 7) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all 6 digits are entered
-    if (value && index === 5 && newOtp.every(digit => digit !== '')) {
+    // Auto-submit when all 8 digits are entered
+    if (value && index === 7 && newOtp.every(digit => digit !== '')) {
       handleVerify();
     }
   };
@@ -67,14 +67,14 @@ export const OTPVerification = memo(({
     if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       navigator.clipboard.readText().then(text => {
-        const digits = text.replace(/\D/g, '').slice(0, 6).split('');
-        if (digits.length === 6) {
+        const digits = text.replace(/\D/g, '').slice(0, 8).split('');
+        if (digits.length === 8) {
           const newOtp = [...otp];
           digits.forEach((digit, i) => {
             newOtp[i] = digit;
           });
           setOtp(newOtp);
-          inputRefs.current[5]?.focus();
+          inputRefs.current[7]?.focus();
           // Auto-verify after paste
           setTimeout(() => handleVerify(), 100);
         }
@@ -84,8 +84,8 @@ export const OTPVerification = memo(({
 
   const handleVerify = async () => {
     const otpCode = otp.join('');
-    if (otpCode.length !== 6) {
-      setError('Please enter all 6 digits');
+    if (otpCode.length !== 8) {
+      setError('Please enter all 8 digits');
       return;
     }
 
@@ -106,7 +106,7 @@ export const OTPVerification = memo(({
       setError(errorMessage);
       toast.error(errorMessage);
       // Clear OTP on error
-      setOtp(['', '', '', '', '', '']);
+      setOtp(['', '', '', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {
       setLoading(false);
@@ -122,8 +122,8 @@ export const OTPVerification = memo(({
     try {
       await resendOTP(type, identifier);
       setCountdown(60); // 60 second cooldown
-      toast.success(`OTP resent to your ${type}`);
-      setOtp(['', '', '', '', '', '']);
+      toast.success(`OTP resent! Check your ${type} for the 8-digit code`);
+      setOtp(['', '', '', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } catch (error) {
       const errorMessage = error.message || 'Failed to resend OTP';
@@ -150,10 +150,10 @@ export const OTPVerification = memo(({
               Verify {type === 'email' ? 'Email' : 'Phone Number'}
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              {label || `Enter the 6-digit code sent to ${displayIdentifier}`}
-              {type === 'phone' && (
-                <span className="block mt-1 text-xs text-yellow-500">
-                  💡 In test mode, check Supabase Dashboard → Authentication → Logs for OTP
+              {label || `Enter the 8-digit code sent to ${displayIdentifier}`}
+              {type === 'email' && (
+                <span className="block mt-2 text-xs text-muted-foreground">
+                  Can't find the code? Check your spam folder or wait a few moments for the email to arrive.
                 </span>
               )}
             </CardDescription>

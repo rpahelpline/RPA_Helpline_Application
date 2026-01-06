@@ -6,6 +6,7 @@ export const Card = memo(forwardRef(({
   className,
   variant = 'default',
   hover = false,
+  glow = false,
   onClick,
   ...props
 }, ref) => {
@@ -14,7 +15,16 @@ export const Card = memo(forwardRef(({
     elevated: 'bg-card/80 backdrop-blur-sm border border-border shadow-lg shadow-black/20',
     outline: 'bg-transparent border border-secondary/20',
     terminal: 'bg-background border border-secondary/30 font-mono',
+    ghost: 'bg-transparent border-transparent',
+    solid: 'bg-card border border-border',
+    primary: 'bg-primary/5 border border-primary/30',
+    secondary: 'bg-secondary/5 border border-secondary/30',
+    destructive: 'bg-destructive/5 border border-destructive/30',
+    success: 'bg-emerald-500/5 border border-emerald-500/30',
+    warning: 'bg-amber-500/5 border border-amber-500/30',
   };
+  
+  const glowClasses = glow ? 'shadow-lg shadow-primary/10' : '';
   
   return (
     <div
@@ -22,6 +32,7 @@ export const Card = memo(forwardRef(({
       className={clsx(
         'rounded-lg',
         variants[variant],
+        glowClasses,
         // Smooth transitions
         'transition-all duration-300 ease-out',
         'transform-gpu',

@@ -1,12 +1,15 @@
-import { memo, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { memo, useMemo, useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { 
   Briefcase, DollarSign, Clock, Star, ArrowRight, MapPin, Building2,
   CheckCircle, Calendar, Eye, Users, Target, Code, Plus, MessageSquare,
-  FileText, Award, TrendingUp, ExternalLink
+  FileText, Award, TrendingUp, ExternalLink, BarChart3, Filter
 } from 'lucide-react';
+import { projectApi } from '../../services/api';
+import { useToast } from '../../hooks/useToast';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
 // ============================================================================
 // POSTED PROJECT CARD COMPONENT
@@ -142,45 +145,85 @@ TalentCard.displayName = 'TalentCard';
 // ============================================================================
 // MAIN CLIENT DASHBOARD COMPONENT
 // ============================================================================
-export const ClientDashboard = memo(() => {
-  // Mock data for posted projects
-  const postedProjects = useMemo(() => [
-    {
-      id: '1',
-      title: 'Invoice Processing Automation',
-      budget: '₹50,000 - ₹80,000',
-      type: 'Fixed Price',
-      status: 'IN_PROGRESS',
-      proposals: 15,
-      views: 234,
-      posted: '3 days ago',
-      progress: 45,
-      assignee: { name: 'John Smith', rating: 4.9 },
-    },
-    {
-      id: '2',
-      title: 'HR Onboarding Bot',
-      budget: '₹35,000 - ₹50,000',
-      type: 'Fixed Price',
-      status: 'ACTIVE',
-      proposals: 8,
-      views: 156,
-      posted: '1 day ago',
-      deadline: 'Jan 15, 2025',
-    },
-    {
-      id: '3',
-      title: 'Data Migration Scripts',
-      budget: '₹750/hr',
-      type: 'Hourly',
-      status: 'REVIEW',
-      proposals: 12,
-      views: 189,
-      posted: '5 days ago',
-      progress: 90,
-      assignee: { name: 'Sarah Chen', rating: 5.0 },
-    },
-  ], []);
+export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [projects, setProjects] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    loadData();
+  }, [activeTab]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      if (activeTab === 'projects') {
+        const response = await projectApi.getMyProjects({ limit: 50 });
+        setProjects(response.projects || []);
+      } else if (activeTab === 'applications') {
+        // Load all applications across all projects
+        const projectsResponse = await projectApi.getMyProjects({ limit: 100 });
+        const allApplications = [];
+        for (const project of projectsResponse.projects || []) {
+          try {
+            const appsResponse = await projectApi.getApplications(project.id);
+            if (appsResponse.applications) {
+              appsResponse.applications.forEach(app => {
+                allApplications.push({ ...app, project_title: project.title, project_id: project.id });
+              });
+            }
+          } catch (err) {
+            console.error(`Failed to load applications for project ${project.id}:`, err);
+          }
+        }
+        setApplications(allApplications);
+      } else if (activeTab === 'analytics') {
+        // Load analytics data
+        const projectsResponse = await projectApi.getMyProjects({ limit: 100 });
+        const analyticsData = {
+          totalProjects: projectsResponse.pagination?.total || 0,
+          totalApplications: 0,
+          totalViews: 0,
+          activeProjects: 0,
+          completedProjects: 0
+        };
+        
+        for (const project of projectsResponse.projects || []) {
+          if (project.status === 'open' || project.status === 'in_progress') {
+            analyticsData.activeProjects++;
+          } else if (project.status === 'completed') {
+            analyticsData.completedProjects++;
+          }
+          analyticsData.totalViews += project.views || 0;
+          
+          try {
+            const statsResponse = await projectApi.getApplicationStats(project.id);
+            if (statsResponse.stats) {
+              analyticsData.totalApplications += statsResponse.stats.total || 0;
+            }
+          } catch (err) {
+            // Ignore errors for stats
+          }
+        }
+        setStats(analyticsData);
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+      toast.error(err.error || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const tabs = [
+    { id: 'projects', label: 'My Projects', icon: Briefcase },
+    { id: 'applications', label: 'Applications', icon: FileText },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  ];
 
   // Mock data for recommended talent
   const recommendedTalent = useMemo(() => [
@@ -225,148 +268,241 @@ export const ClientDashboard = memo(() => {
   }), []);
 
   return (
-    <div className="space-y-8">
-      {/* Section: My Projects */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-primary" />
-            MY PROJECTS
-          </h2>
-          <div className="flex items-center gap-2">
-            <Link to="/register/project">
-              <Button className="bg-primary hover:bg-primary/90 font-mono text-xs tracking-wider glow-red">
-                <Plus className="w-4 h-4 mr-1" />
-                POST PROJECT
-              </Button>
-            </Link>
-            <Link to="/projects/my">
+    <div className="space-y-6">
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-border">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 font-mono text-sm tracking-wider transition-colors border-b-2 ${
+              activeTab === tab.id
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <LoadingSpinner />
+        </div>
+      ) : (
+        <>
+          {activeTab === 'projects' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-primary" />
+                  MY PROJECTS
+                </h2>
+                <Link to="/register/project">
+                  <Button className="bg-primary hover:bg-primary/90 font-mono text-xs tracking-wider">
+                    <Plus className="w-4 h-4 mr-1" />
+                    POST PROJECT
+                  </Button>
+                </Link>
+              </div>
+              
+              {projects.length > 0 ? (
+                <div className="grid lg:grid-cols-3 gap-4">
+                  {projects.map((project) => (
+                    <PostedProjectCard 
+                      key={project.id} 
+                      project={{
+                        ...project,
+                        budget: project.budget_min && project.budget_max 
+                          ? `₹${project.budget_min.toLocaleString()} - ₹${project.budget_max.toLocaleString()}`
+                          : project.budget_min 
+                            ? `₹${project.budget_min.toLocaleString()}+`
+                            : 'Not specified',
+                        type: 'Fixed Price',
+                        proposals: project.application_count || 0,
+                        views: project.views || 0,
+                        posted: project.created_at ? new Date(project.created_at).toLocaleDateString() : 'Recently',
+                        status: project.status?.toUpperCase() || 'ACTIVE'
+                      }} 
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="tech-panel border-border">
+                  <CardContent className="p-12 text-center">
+                    <Briefcase className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-display font-bold text-foreground mb-2">No Projects Yet</h3>
+                    <p className="text-muted-foreground mb-6">Start by posting your first project</p>
+                    <Link to="/register/project">
+                      <Button className="bg-primary hover:bg-primary/90 font-mono text-xs tracking-wider">
+                        <Plus className="w-4 h-4 mr-2" />
+                        POST YOUR FIRST PROJECT
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'applications' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  APPLICATIONS
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="font-mono text-xs">
+                    <Filter className="w-4 h-4 mr-2" />
+                    FILTER
+                  </Button>
+                </div>
+              </div>
+              
+              {applications.length > 0 ? (
+                <div className="space-y-4">
+                  {applications.map((application) => (
+                    <Card key={application.id} className="tech-panel border-border bg-card/50">
+                      <CardContent className="p-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold">
+                                {application.applicant?.full_name?.charAt(0) || 'A'}
+                              </div>
+                              <div>
+                                <h4 className="font-display font-bold text-foreground">
+                                  {application.applicant?.full_name || 'Applicant'}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">{application.project_title}</p>
+                              </div>
+                            </div>
+                            {application.cover_letter && (
+                              <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                {application.cover_letter}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              {application.proposed_rate && (
+                                <span>Rate: ₹{application.proposed_rate.toLocaleString()}/hr</span>
+                              )}
+                              {application.estimated_duration && (
+                                <span>Duration: {application.estimated_duration}</span>
+                              )}
+                              <span>Applied: {new Date(application.created_at).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-mono ${
+                              application.status === 'accepted' ? 'bg-green-500/20 text-green-500' :
+                              application.status === 'rejected' ? 'bg-red-500/20 text-red-500' :
+                              application.status === 'shortlisted' ? 'bg-blue-500/20 text-blue-500' :
+                              'bg-yellow-500/20 text-yellow-500'
+                            }`}>
+                              {application.status?.toUpperCase() || 'PENDING'}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/profile/${application.applicant?.id}`)}
+                                className="font-mono text-xs"
+                              >
+                                VIEW PROFILE
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/projects/${application.project_id}`)}
+                                className="font-mono text-xs"
+                              >
+                                VIEW PROJECT
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="tech-panel border-border">
+                  <CardContent className="p-12 text-center">
+                    <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-display font-bold text-foreground mb-2">No Applications Yet</h3>
+                    <p className="text-muted-foreground">Applications will appear here when freelancers apply to your projects</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'analytics' && stats && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                ANALYTICS
+              </h2>
+              
+              <div className="grid md:grid-cols-4 gap-4">
+                <Card className="tech-panel border-border bg-card/50">
+                  <CardContent className="p-4">
+                    <p className="text-xs font-mono text-muted-foreground mb-1">TOTAL PROJECTS</p>
+                    <p className="text-2xl font-display font-bold text-primary">{stats.totalProjects}</p>
+                  </CardContent>
+                </Card>
+                <Card className="tech-panel border-border bg-card/50">
+                  <CardContent className="p-4">
+                    <p className="text-xs font-mono text-muted-foreground mb-1">TOTAL APPLICATIONS</p>
+                    <p className="text-2xl font-display font-bold text-secondary">{stats.totalApplications}</p>
+                  </CardContent>
+                </Card>
+                <Card className="tech-panel border-border bg-card/50">
+                  <CardContent className="p-4">
+                    <p className="text-xs font-mono text-muted-foreground mb-1">ACTIVE PROJECTS</p>
+                    <p className="text-2xl font-display font-bold text-accent">{stats.activeProjects}</p>
+                  </CardContent>
+                </Card>
+                <Card className="tech-panel border-border bg-card/50">
+                  <CardContent className="p-4">
+                    <p className="text-xs font-mono text-muted-foreground mb-1">TOTAL VIEWS</p>
+                    <p className="text-2xl font-display font-bold text-foreground">{stats.totalViews}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Recommended Talent Section (shown on projects tab) */}
+      {activeTab === 'projects' && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
+              <Users className="w-5 h-5 text-accent" />
+              RECOMMENDED TALENT
+            </h2>
+            <Link to="/talent">
               <Button variant="ghost" className="font-mono text-xs tracking-wider text-secondary">
-                VIEW ALL <ArrowRight className="w-3 h-3 ml-1" />
+                BROWSE ALL <ArrowRight className="w-3 h-3 ml-1" />
               </Button>
             </Link>
           </div>
-        </div>
-        
-        <div className="grid lg:grid-cols-3 gap-4">
-          {postedProjects.map((project) => (
-            <PostedProjectCard key={project.id} project={project} />
-          ))}
-        </div>
-      </section>
-
-      {/* Section: Spending Overview */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-secondary" />
-            SPENDING OVERVIEW
-          </h2>
-        </div>
-        
-        <div className="grid md:grid-cols-4 gap-4">
-          <Card className="tech-panel border-border bg-card/50">
-            <CardContent className="p-4">
-              <p className="text-xs font-mono text-muted-foreground mb-1">THIS MONTH</p>
-              <p className="text-2xl font-display font-bold text-secondary">{spendingData.thisMonth}</p>
-              <p className="text-xs text-accent flex items-center gap-1 mt-1">
-                <TrendingUp className="w-3 h-3" /> +52% from last month
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="tech-panel border-border bg-card/50">
-            <CardContent className="p-4">
-              <p className="text-xs font-mono text-muted-foreground mb-1">LAST MONTH</p>
-              <p className="text-2xl font-display font-bold text-foreground">{spendingData.lastMonth}</p>
-            </CardContent>
-          </Card>
-          <Card className="tech-panel border-border bg-card/50">
-            <CardContent className="p-4">
-              <p className="text-xs font-mono text-muted-foreground mb-1">TOTAL SPENT</p>
-              <p className="text-2xl font-display font-bold text-primary">{spendingData.totalSpent}</p>
-              <p className="text-xs text-muted-foreground mt-1">Since joining</p>
-            </CardContent>
-          </Card>
-          <Card className="tech-panel border-border bg-card/50">
-            <CardContent className="p-4">
-              <p className="text-xs font-mono text-muted-foreground mb-1">ACTIVE CONTRACTS</p>
-              <p className="text-2xl font-display font-bold text-accent">{spendingData.activeContracts}</p>
-              <p className="text-xs text-muted-foreground mt-1">In progress</p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* Section: Recommended Talent */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
-            <Users className="w-5 h-5 text-accent" />
-            RECOMMENDED TALENT
-          </h2>
-          <Link to="/talent">
-            <Button variant="ghost" className="font-mono text-xs tracking-wider text-secondary">
-              BROWSE ALL <ArrowRight className="w-3 h-3 ml-1" />
-            </Button>
-          </Link>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-4">
-          {recommendedTalent.map((talent) => (
-            <TalentCard key={talent.id} talent={talent} />
-          ))}
-        </div>
-      </section>
-
-      {/* Section: Quick Actions */}
-      <section>
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card className="tech-panel border-border bg-card/50 hover-lift cursor-pointer group">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <FileText className="w-6 h-6 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-display font-bold text-foreground tracking-wider group-hover:text-primary transition-colors">
-                  CONTRACTS
-                </h3>
-                <p className="text-sm text-muted-foreground">Manage agreements</p>
-              </div>
-              <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            </CardContent>
-          </Card>
           
-          <Card className="tech-panel border-border bg-card/50 hover-lift cursor-pointer group">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/30 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
-                <MessageSquare className="w-6 h-6 text-secondary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-display font-bold text-foreground tracking-wider group-hover:text-secondary transition-colors">
-                  MESSAGES
-                </h3>
-                <p className="text-sm text-muted-foreground">Chat with talent</p>
-              </div>
-              <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-secondary transition-colors" />
-            </CardContent>
-          </Card>
-          
-          <Card className="tech-panel border-border bg-card/50 hover-lift cursor-pointer group">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                <Award className="w-6 h-6 text-accent" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-display font-bold text-foreground tracking-wider group-hover:text-accent transition-colors">
-                  REVIEWS
-                </h3>
-                <p className="text-sm text-muted-foreground">Rate your talent</p>
-              </div>
-              <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+          <div className="grid md:grid-cols-3 gap-4">
+            {recommendedTalent.map((talent) => (
+              <TalentCard key={talent.id} talent={talent} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 });

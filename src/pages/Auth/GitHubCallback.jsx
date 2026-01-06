@@ -9,7 +9,7 @@ export const GitHubCallback = memo(() => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { handleGitHubCallback, setRole } = useAuthStore();
-  const { toast } = useToast();
+  const toast = useToast();
   
   const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
   const [error, setError] = useState(null);

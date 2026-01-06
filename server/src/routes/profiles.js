@@ -7,6 +7,33 @@ import { PAGINATION, USER_TYPES } from '../config/constants.js';
 
 const router = express.Router();
 
+// Helper function to calculate profile completion
+const calculateProfileCompletion = (profile, platforms, skills, experience) => {
+  let completion = 0;
+  const fields = {
+    full_name: profile.full_name,
+    headline: profile.headline,
+    bio: profile.bio,
+    country: profile.country,
+    city: profile.city,
+    public_email: profile.public_email,
+    linkedin_url: profile.linkedin_url,
+    avatar_url: profile.avatar_url,
+    has_skills: skills && skills.length > 0,
+    has_platforms: platforms && platforms.length > 0,
+    has_experience: experience && experience.length > 0,
+  };
+  
+  const totalFields = Object.keys(fields).length;
+  const filledFields = Object.values(fields).filter(v => {
+    if (typeof v === 'boolean') return v;
+    return v && v !== '';
+  }).length;
+  
+  completion = Math.round((filledFields / totalFields) * 100);
+  return Math.min(100, Math.max(0, completion));
+};
+
 // Get my profile
 router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
   const profile = req.user;
@@ -53,17 +80,68 @@ router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
     .eq('profile_id', req.userId)
     .order('start_date', { ascending: false });
 
-  // Get portfolio
-  const { data: portfolio } = await supabaseAdmin
+  // Get portfolio with expanded platform and skill names
+  const { data: portfolioRaw } = await supabaseAdmin
     .from('user_portfolio')
     .select('*')
     .eq('profile_id', req.userId)
     .order('display_order')
     .order('created_at', { ascending: false });
 
+  // Convert UUID arrays to name arrays for portfolio items
+  const portfolio = await Promise.all((portfolioRaw || []).map(async (item) => {
+    const portfolioItem = { ...item };
+    
+    // Convert platform UUIDs to names
+    if (item.platforms_used && Array.isArray(item.platforms_used) && item.platforms_used.length > 0) {
+      const platformNames = [];
+      for (const platformId of item.platforms_used) {
+        const { data: platform } = await supabaseAdmin
+          .from('rpa_platforms')
+          .select('name')
+          .eq('id', platformId)
+          .single();
+        if (platform && platform.name) {
+          platformNames.push(platform.name);
+        }
+      }
+      portfolioItem.platforms_used = platformNames;
+    }
+    
+    // Convert skill UUIDs to names
+    if (item.skills_used && Array.isArray(item.skills_used) && item.skills_used.length > 0) {
+      const skillNames = [];
+      for (const skillId of item.skills_used) {
+        const { data: skill } = await supabaseAdmin
+          .from('skills')
+          .select('name')
+          .eq('id', skillId)
+          .single();
+        if (skill && skill.name) {
+          skillNames.push(skill.name);
+        }
+      }
+      portfolioItem.skills_used = skillNames;
+    }
+    
+    return portfolioItem;
+  }));
+
+  // Calculate profile completion
+  const completion = calculateProfileCompletion(profile, platforms, skills, experience);
+  
+  // Update profile completion in database
+  if (profile.profile_completion !== completion) {
+    await supabaseAdmin
+      .from('profiles')
+      .update({ profile_completion: completion })
+      .eq('id', req.userId);
+  }
+
   res.json({
     profile: {
       ...profile,
+      profile_completion: completion,
       platforms: platforms || [],
       skills: skills || [],
       certifications: certifications || [],
@@ -95,7 +173,10 @@ router.put('/me', authenticateToken, asyncHandler(async (req, res) => {
     current_company,
     resume_url,
     total_experience_years,
-    rpa_experience_years
+    rpa_experience_years,
+    // Image fields
+    avatar_url,
+    cover_image_url
   } = req.body;
 
   const updates = {};
@@ -119,6 +200,9 @@ router.put('/me', authenticateToken, asyncHandler(async (req, res) => {
   if (resume_url !== undefined) updates.resume_url = resume_url;
   if (total_experience_years !== undefined) updates.total_experience_years = total_experience_years;
   if (rpa_experience_years !== undefined) updates.rpa_experience_years = rpa_experience_years;
+  // Image fields
+  if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+  if (cover_image_url !== undefined) updates.cover_image_url = cover_image_url;
 
   const { data: profile, error } = await supabaseAdmin
     .from('profiles')
@@ -130,6 +214,33 @@ router.put('/me', authenticateToken, asyncHandler(async (req, res) => {
   if (error) {
     console.error('Profile update error:', error);
     return res.status(500).json({ error: 'Failed to update profile' });
+  }
+
+  // Recalculate profile completion
+  const { data: platforms } = await supabaseAdmin
+    .from('user_platforms')
+    .select('*')
+    .eq('profile_id', req.userId);
+
+  const { data: skills } = await supabaseAdmin
+    .from('user_skills')
+    .select('*')
+    .eq('profile_id', req.userId);
+
+  const { data: experience } = await supabaseAdmin
+    .from('user_experience')
+    .select('*')
+    .eq('profile_id', req.userId);
+
+  const completion = calculateProfileCompletion(profile, platforms, skills, experience);
+  
+  // Update completion if changed
+  if (profile.profile_completion !== completion) {
+    await supabaseAdmin
+      .from('profiles')
+      .update({ profile_completion: completion })
+      .eq('id', req.userId);
+    profile.profile_completion = completion;
   }
 
   res.json({ message: 'Profile updated successfully', profile });
@@ -222,13 +333,67 @@ router.get('/:id', idValidation, optionalAuth, asyncHandler(async (req, res) => 
     `)
     .eq('profile_id', id);
 
-  // Get portfolio
-  const { data: portfolio } = await supabaseAdmin
+  // Get experience
+  const { data: experience } = await supabaseAdmin
+    .from('user_experience')
+    .select('*')
+    .eq('profile_id', id)
+    .order('is_current', { ascending: false })
+    .order('start_date', { ascending: false });
+
+  // Get education
+  const { data: education } = await supabaseAdmin
+    .from('user_education')
+    .select('*')
+    .eq('profile_id', id)
+    .order('start_date', { ascending: false });
+
+  // Get portfolio with expanded platform and skill names
+  const { data: portfolioRaw } = await supabaseAdmin
     .from('user_portfolio')
     .select('*')
     .eq('profile_id', id)
     .order('is_featured', { ascending: false })
     .order('display_order');
+
+  // Convert UUID arrays to name arrays for portfolio items
+  const portfolio = await Promise.all((portfolioRaw || []).map(async (item) => {
+    const portfolioItem = { ...item };
+    
+    // Convert platform UUIDs to names
+    if (item.platforms_used && Array.isArray(item.platforms_used) && item.platforms_used.length > 0) {
+      const platformNames = [];
+      for (const platformId of item.platforms_used) {
+        const { data: platform } = await supabaseAdmin
+          .from('rpa_platforms')
+          .select('name')
+          .eq('id', platformId)
+          .single();
+        if (platform && platform.name) {
+          platformNames.push(platform.name);
+        }
+      }
+      portfolioItem.platforms_used = platformNames;
+    }
+    
+    // Convert skill UUIDs to names
+    if (item.skills_used && Array.isArray(item.skills_used) && item.skills_used.length > 0) {
+      const skillNames = [];
+      for (const skillId of item.skills_used) {
+        const { data: skill } = await supabaseAdmin
+          .from('skills')
+          .select('name')
+          .eq('id', skillId)
+          .single();
+        if (skill && skill.name) {
+          skillNames.push(skill.name);
+        }
+      }
+      portfolioItem.skills_used = skillNames;
+    }
+    
+    return portfolioItem;
+  }));
 
   // Get reviews
   const { data: reviews } = await supabaseAdmin
@@ -255,6 +420,7 @@ router.get('/:id', idValidation, optionalAuth, asyncHandler(async (req, res) => 
       cover_image_url: profile.cover_image_url,
       user_type: profile.user_type,
       country: profile.country,
+      state: profile.state,
       city: profile.city,
       timezone: profile.timezone,
       headline: profile.headline,
@@ -262,6 +428,7 @@ router.get('/:id', idValidation, optionalAuth, asyncHandler(async (req, res) => 
       public_email: profile.public_email,
       website_url: profile.website_url,
       linkedin_url: profile.linkedin_url,
+      resume_url: profile.resume_url,
       is_available: profile.is_available,
       is_verified: profile.is_verified,
       verification_badge: profile.verification_badge,
@@ -270,6 +437,8 @@ router.get('/:id', idValidation, optionalAuth, asyncHandler(async (req, res) => 
       platforms: platforms || [],
       skills: skills || [],
       certifications: certifications || [],
+      experience: experience || [],
+      education: education || [],
       portfolio: portfolio || [],
       reviews: reviews || []
     }
@@ -519,6 +688,92 @@ router.post('/me/portfolio', authenticateToken, asyncHandler(async (req, res) =>
     return res.status(400).json({ error: 'Title is required' });
   }
 
+  // Convert platform names to UUIDs
+  let platformUuids = [];
+  if (platforms_used && Array.isArray(platforms_used) && platforms_used.length > 0) {
+    // Check if first item is a UUID (starts with valid UUID pattern) or a string
+    const isUuid = platforms_used[0] && typeof platforms_used[0] === 'string' && 
+                   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(platforms_used[0]);
+    
+    if (!isUuid) {
+      // Convert names to UUIDs by looking them up
+      for (const platformName of platforms_used) {
+        if (typeof platformName === 'string' && platformName.trim()) {
+          const trimmedName = platformName.trim();
+          // Try exact match first
+          let { data: platform } = await supabaseAdmin
+            .from('rpa_platforms')
+            .select('id')
+            .eq('name', trimmedName)
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+          
+          // If no exact match, try case-insensitive match
+          if (!platform) {
+            const { data: platformData } = await supabaseAdmin
+              .from('rpa_platforms')
+              .select('id')
+              .ilike('name', trimmedName)
+              .eq('is_active', true)
+              .limit(1)
+              .single();
+            platform = platformData;
+          }
+          
+          if (platform && platform.id) {
+            platformUuids.push(platform.id);
+          }
+        }
+      }
+    } else {
+      platformUuids = platforms_used; // Already UUIDs
+    }
+  }
+
+  // Convert skill names to UUIDs
+  let skillUuids = [];
+  if (skills_used && Array.isArray(skills_used) && skills_used.length > 0) {
+    // Check if first item is a UUID or a string
+    const isUuid = skills_used[0] && typeof skills_used[0] === 'string' && 
+                   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(skills_used[0]);
+    
+    if (!isUuid) {
+      // Convert names to UUIDs by looking them up
+      for (const skillName of skills_used) {
+        if (typeof skillName === 'string' && skillName.trim()) {
+          const trimmedName = skillName.trim();
+          // Try exact match first
+          let { data: skill } = await supabaseAdmin
+            .from('skills')
+            .select('id')
+            .eq('name', trimmedName)
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+          
+          // If no exact match, try case-insensitive match
+          if (!skill) {
+            const { data: skillData } = await supabaseAdmin
+              .from('skills')
+              .select('id')
+              .ilike('name', trimmedName)
+              .eq('is_active', true)
+              .limit(1)
+              .single();
+            skill = skillData;
+          }
+          
+          if (skill && skill.id) {
+            skillUuids.push(skill.id);
+          }
+        }
+      }
+    } else {
+      skillUuids = skills_used; // Already UUIDs
+    }
+  }
+
   const { data, error } = await supabaseAdmin
     .from('user_portfolio')
     .insert({
@@ -536,8 +791,8 @@ router.post('/me/portfolio', authenticateToken, asyncHandler(async (req, res) =>
       is_client_confidential: is_client_confidential || false,
       completion_date,
       duration_months,
-      platforms_used: platforms_used || [],
-      skills_used: skills_used || [],
+      platforms_used: platformUuids,
+      skills_used: skillUuids,
       key_results: key_results || [],
       is_featured: is_featured || false
     })
@@ -552,15 +807,145 @@ router.post('/me/portfolio', authenticateToken, asyncHandler(async (req, res) =>
   res.json({ message: 'Portfolio item added successfully', portfolio: data });
 }));
 
+// Update portfolio item
+router.put('/me/portfolio/:portfolioId', authenticateToken, asyncHandler(async (req, res) => {
+  const { portfolioId } = req.params;
+  const updates = { ...req.body };
+
+  // Check ownership
+  const { data: existing } = await supabaseAdmin
+    .from('user_portfolio')
+    .select('profile_id')
+    .eq('id', portfolioId)
+    .eq('profile_id', req.userId)
+    .single();
+
+  if (!existing) {
+    return res.status(404).json({ error: 'Portfolio item not found' });
+  }
+
+  // Convert platform names to UUIDs if provided
+  if (updates.platforms_used && Array.isArray(updates.platforms_used) && updates.platforms_used.length > 0) {
+    const isUuid = updates.platforms_used[0] && typeof updates.platforms_used[0] === 'string' && 
+                   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(updates.platforms_used[0]);
+    
+    if (!isUuid) {
+      const platformUuids = [];
+      for (const platformName of updates.platforms_used) {
+        if (typeof platformName === 'string' && platformName.trim()) {
+          const trimmedName = platformName.trim();
+          // Try exact match first
+          let { data: platform } = await supabaseAdmin
+            .from('rpa_platforms')
+            .select('id')
+            .eq('name', trimmedName)
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+          
+          // If no exact match, try case-insensitive match
+          if (!platform) {
+            const { data: platformData } = await supabaseAdmin
+              .from('rpa_platforms')
+              .select('id')
+              .ilike('name', trimmedName)
+              .eq('is_active', true)
+              .limit(1)
+              .single();
+            platform = platformData;
+          }
+          
+          if (platform && platform.id) {
+            platformUuids.push(platform.id);
+          }
+        }
+      }
+      updates.platforms_used = platformUuids;
+    }
+  }
+
+  // Convert skill names to UUIDs if provided
+  if (updates.skills_used && Array.isArray(updates.skills_used) && updates.skills_used.length > 0) {
+    const isUuid = updates.skills_used[0] && typeof updates.skills_used[0] === 'string' && 
+                   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(updates.skills_used[0]);
+    
+    if (!isUuid) {
+      const skillUuids = [];
+      for (const skillName of updates.skills_used) {
+        if (typeof skillName === 'string' && skillName.trim()) {
+          const trimmedName = skillName.trim();
+          // Try exact match first
+          let { data: skill } = await supabaseAdmin
+            .from('skills')
+            .select('id')
+            .eq('name', trimmedName)
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+          
+          // If no exact match, try case-insensitive match
+          if (!skill) {
+            const { data: skillData } = await supabaseAdmin
+              .from('skills')
+              .select('id')
+              .ilike('name', trimmedName)
+              .eq('is_active', true)
+              .limit(1)
+              .single();
+            skill = skillData;
+          }
+          
+          if (skill && skill.id) {
+            skillUuids.push(skill.id);
+          }
+        }
+      }
+      updates.skills_used = skillUuids;
+    }
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('user_portfolio')
+    .update(updates)
+    .eq('id', portfolioId)
+    .eq('profile_id', req.userId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Portfolio update error:', error);
+    return res.status(500).json({ error: 'Failed to update portfolio item' });
+  }
+
+  res.json({ message: 'Portfolio item updated successfully', portfolio: data });
+}));
+
 // Delete portfolio item
 router.delete('/me/portfolio/:portfolioId', authenticateToken, asyncHandler(async (req, res) => {
   const { portfolioId } = req.params;
 
-  await supabaseAdmin
+  // Check ownership
+  const { data: existing } = await supabaseAdmin
+    .from('user_portfolio')
+    .select('profile_id')
+    .eq('id', portfolioId)
+    .eq('profile_id', req.userId)
+    .single();
+
+  if (!existing) {
+    return res.status(404).json({ error: 'Portfolio item not found' });
+  }
+
+  const { error } = await supabaseAdmin
     .from('user_portfolio')
     .delete()
     .eq('profile_id', req.userId)
     .eq('id', portfolioId);
+
+  if (error) {
+    console.error('Portfolio delete error:', error);
+    return res.status(500).json({ error: 'Failed to delete portfolio item' });
+  }
 
   res.json({ message: 'Portfolio item removed successfully' });
 }));
@@ -633,6 +1018,113 @@ router.get('/', optionalAuth, paginationValidation, asyncHandler(async (req, res
       limit: parseInt(limit),
       total: count,
       totalPages: Math.ceil(count / limit)
+    }
+  });
+}));
+
+// Request verification
+router.post('/me/request-verification', authenticateToken, asyncHandler(async (req, res) => {
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('id', req.userId)
+    .single();
+
+  if (!profile) {
+    return res.status(404).json({ error: 'Profile not found' });
+  }
+
+  if (profile.is_verified) {
+    return res.status(400).json({ error: 'Profile is already verified' });
+  }
+
+  // Check profile completion (should be at least 80%)
+  if (profile.profile_completion < 80) {
+    return res.status(400).json({ 
+      error: 'Profile completion must be at least 80% to request verification',
+      profile_completion: profile.profile_completion
+    });
+  }
+
+  // Check if there's already a pending request
+  const { data: existingRequest } = await supabaseAdmin
+    .from('verification_requests')
+    .select('id, status')
+    .eq('profile_id', profile.id)
+    .eq('status', 'pending')
+    .single();
+
+  if (existingRequest) {
+    return res.status(400).json({ 
+      error: 'You already have a pending verification request',
+      request_id: existingRequest.id
+    });
+  }
+
+  // Create verification request record
+  const { data: request, error: requestError } = await supabaseAdmin
+    .from('verification_requests')
+    .insert({
+      profile_id: profile.id,
+      user_id: req.user.user_id,
+      profile_completion: profile.profile_completion,
+      status: 'pending'
+    })
+    .select()
+    .single();
+
+  if (requestError) {
+    console.error('Verification request creation error:', requestError);
+    return res.status(500).json({ error: 'Failed to create verification request' });
+  }
+
+  res.json({
+    message: 'Verification request submitted successfully. Our team will review your profile.',
+    status: 'pending',
+    request_id: request.id
+  });
+}));
+
+// Verify profile (Admin only)
+router.post('/:id/verify', authenticateToken, asyncHandler(async (req, res) => {
+  // Check if user is admin
+  const { data: adminUser } = await supabaseAdmin
+    .from('users')
+    .select('is_admin')
+    .eq('id', req.user.user_id)
+    .single();
+
+  if (!adminUser || !adminUser.is_admin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const { id } = req.params;
+  const { verification_badge } = req.body; // Optional: 'basic', 'pro', 'expert'
+
+  const { data: profile, error } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      is_verified: true,
+      verified_at: new Date().toISOString(),
+      verification_badge: verification_badge || 'basic',
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !profile) {
+    return res.status(404).json({ error: 'Profile not found' });
+  }
+
+  res.json({
+    message: 'Profile verified successfully',
+    profile: {
+      id: profile.id,
+      full_name: profile.full_name,
+      is_verified: profile.is_verified,
+      verification_badge: profile.verification_badge,
+      verified_at: profile.verified_at
     }
   });
 }));

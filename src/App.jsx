@@ -2,7 +2,9 @@ import { BrowserRouter } from 'react-router-dom';
 import { memo, useEffect } from 'react';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { ToastContainer } from './components/common/ToastContainer';
+import { TaxonomyProvider } from './contexts/TaxonomyContext';
 import { AppRoutes } from './routes';
+import { preloadCriticalRoutes } from './utils/preload';
 
 /**
  * Performance optimization: Preload critical resources
@@ -57,10 +59,19 @@ const usePerformanceOptimizations = () => {
           }
         });
         observer.observe({ entryTypes: ['longtask'] });
+        
+        // Preload critical routes after app is idle
+        preloadCriticalRoutes();
+        
         return () => observer.disconnect();
       } catch (e) {
         // PerformanceObserver not supported
+        // Still preload critical routes
+        preloadCriticalRoutes();
       }
+    } else {
+      // Preload critical routes even without PerformanceObserver
+      preloadCriticalRoutes();
     }
   }, []);
 };
@@ -74,10 +85,12 @@ const App = memo(() => {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <div className="app-root smooth-render">
-          <AppRoutes />
-          <ToastContainer />
-        </div>
+        <TaxonomyProvider>
+          <div className="app-root smooth-render">
+            <AppRoutes />
+            <ToastContainer />
+          </div>
+        </TaxonomyProvider>
       </BrowserRouter>
     </ErrorBoundary>
   );

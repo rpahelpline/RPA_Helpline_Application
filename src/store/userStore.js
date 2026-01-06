@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { storage } from '../mock/data';
+import { storage } from '../utils/storage';
 
 const loadUserState = () => {
   try {

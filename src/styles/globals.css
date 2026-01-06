@@ -185,7 +185,7 @@ html {
     --secondary: 210 100% 55%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 20% 15%;
-    --muted-foreground: 220 10% 50%;
+    --muted-foreground: 220 10% 60%;
     --accent: 45 100% 55%;
     --accent-foreground: 220 25% 10%;
     --destructive: 0 85% 50%;
@@ -222,7 +222,7 @@ html {
     --secondary: 210 100% 55%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 20% 15%;
-    --muted-foreground: 220 10% 50%;
+    --muted-foreground: 220 10% 60%;
     --accent: 45 100% 55%;
     --accent-foreground: 220 25% 10%;
     --destructive: 0 85% 50%;

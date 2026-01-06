@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -20,6 +21,8 @@ import notificationRoutes from './routes/notifications.js';
 import messageRoutes from './routes/messages.js';
 import uploadRoutes from './routes/upload.js';
 import otpRoutes from './routes/otp.js';
+import statsRoutes from './routes/stats.js';
+import adminRoutes from './routes/admin.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -35,7 +38,8 @@ const PORT = process.env.PORT || 3000;
 
 // Trust proxy - Required when behind a reverse proxy (like Render, Heroku, etc.)
 // This allows Express to correctly identify the client's IP address
-app.set('trust proxy', true);
+// Set to 1 to only trust the first proxy hop (more secure for rate limiting)
+app.set('trust proxy', 1);
 
 // Security middleware
 // In production, adjust helmet for serving static files
@@ -74,10 +78,24 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  maxAge: 86400 // 24 hours
 };
 
 app.use(cors(corsOptions));
+
+// Response compression - reduces payload size by 30-50%
+app.use(compression({
+  level: 6, // Balanced compression level
+  threshold: 1024, // Only compress responses > 1KB
+  filter: (req, res) => {
+    // Don't compress if client doesn't want it
+    if (req.headers['x-no-compression']) return false;
+    // Use compression filter defaults
+    return compression.filter(req, res);
+  }
+}));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -107,7 +125,14 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Static files for uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!existsSync(uploadsDir)) {
+  mkdirSync(uploadsDir, { recursive: true });
+  console.log(`[Uploads] Created uploads directory at: ${uploadsDir}`);
+}
+app.use('/uploads', express.static(uploadsDir));
+console.log(`[Uploads] Serving static files from: ${uploadsDir}`);
 
 // Serve frontend static files in production (from root dist folder)
 // This must come before API routes so static assets are served first
@@ -173,6 +198,10 @@ app.use('/api/upload', uploadRoutes);
 
 // OTP verification
 app.use('/api/otp', otpRoutes);
+app.use('/api/stats', statsRoutes);
+
+// Admin panel (requires admin authentication)
+app.use('/api/admin', adminRoutes);
 
 // Error handling for API routes (before SPA fallback, only for /api routes)
 app.use('/api', notFoundHandler);

@@ -1,11 +1,12 @@
 import express from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { cacheMiddleware } from '../middleware/cache.js';
 
 const router = express.Router();
 
-// Get all RPA platforms
-router.get('/platforms', asyncHandler(async (req, res) => {
+// Get all RPA platforms (cached for 5 minutes - rarely changes)
+router.get('/platforms', cacheMiddleware(300), asyncHandler(async (req, res) => {
   const { data: platforms, error } = await supabaseAdmin
     .from('rpa_platforms')
     .select('*')
@@ -56,8 +57,8 @@ router.get('/platforms/:slug', asyncHandler(async (req, res) => {
   });
 }));
 
-// Get all skill categories with skills
-router.get('/skills', asyncHandler(async (req, res) => {
+// Get all skill categories with skills (cached for 5 minutes)
+router.get('/skills', cacheMiddleware(300), asyncHandler(async (req, res) => {
   const { category } = req.query;
 
   // Get categories
@@ -103,8 +104,8 @@ router.get('/skills', asyncHandler(async (req, res) => {
   });
 }));
 
-// Get all certifications
-router.get('/certifications', asyncHandler(async (req, res) => {
+// Get all certifications (cached for 5 minutes)
+router.get('/certifications', cacheMiddleware(300), asyncHandler(async (req, res) => {
   const { platform, level } = req.query;
 
   let query = supabaseAdmin
@@ -141,8 +142,8 @@ router.get('/certifications', asyncHandler(async (req, res) => {
   res.json({ certifications });
 }));
 
-// Get industries list
-router.get('/industries', asyncHandler(async (req, res) => {
+// Get industries list (cached for 1 hour - static data)
+router.get('/industries', cacheMiddleware(3600), asyncHandler(async (req, res) => {
   const industries = [
     'Banking & Finance',
     'Healthcare',
@@ -168,8 +169,8 @@ router.get('/industries', asyncHandler(async (req, res) => {
   res.json({ industries });
 }));
 
-// Get company sizes
-router.get('/company-sizes', asyncHandler(async (req, res) => {
+// Get company sizes (cached for 1 hour - static data)
+router.get('/company-sizes', cacheMiddleware(3600), asyncHandler(async (req, res) => {
   const sizes = [
     { value: '1-10', label: '1-10 employees' },
     { value: '11-50', label: '11-50 employees' },

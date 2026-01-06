@@ -47,23 +47,23 @@ export const Modal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-dark-bg/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
           />
 
           {/* Modal Content */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={clsx(
-              'relative bg-dark-surface border border-primary-blue/30 rounded-lg shadow-2xl w-full',
+              'relative tech-panel-strong rounded-xl shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col',
               sizes[size],
               className
             )}
@@ -71,22 +71,22 @@ export const Modal = ({
           >
             {/* Header */}
             {title && (
-              <div className="flex items-center justify-between p-6 border-b border-dark-border">
-                <h2 className="text-xl font-bold text-white font-display uppercase">{title}</h2>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                <h2 className="text-lg font-display font-bold text-foreground uppercase tracking-wider">{title}</h2>
                 {showCloseButton && (
                   <button
                     onClick={onClose}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted"
                     aria-label="Close modal"
                   >
-                    <FaTimes className="text-xl" />
+                    <FaTimes className="w-4 h-4" />
                   </button>
                 )}
               </div>
             )}
 
             {/* Content */}
-            <div className="p-6">{children}</div>
+            <div className="p-6 overflow-y-auto flex-1">{children}</div>
           </motion.div>
         </div>
       )}

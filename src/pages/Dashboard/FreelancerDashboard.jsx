@@ -1,11 +1,13 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { statsApi, profileApi, projectApi } from '../../services/api';
 import { 
-  Briefcase, DollarSign, Clock, Star, ArrowRight, MapPin, Building2,
-  CheckCircle, Calendar, Eye, TrendingUp, Target, Code, Zap, Award,
-  ExternalLink, BookOpen, Users
+  Briefcase, Clock, Star, ArrowRight, MapPin, Building2,
+  CheckCircle, Calendar, Eye, Target, Code, Zap, Award,
+  ExternalLink, BookOpen, Users, FileText
 } from 'lucide-react';
 
 // ============================================================================
@@ -118,7 +120,6 @@ const ActiveProjectCard = memo(({ project }) => (
           <Calendar className="w-3 h-3" />
           Due: {project.deadline}
         </span>
-        <span className="text-secondary font-display font-bold">{project.earnings}</span>
       </div>
     </CardContent>
   </Card>
@@ -158,160 +159,120 @@ SkillBadge.displayName = 'SkillBadge';
 // MAIN FREELANCER DASHBOARD COMPONENT
 // ============================================================================
 export const FreelancerDashboard = memo(() => {
-  // Mock data for recommended projects
-  const recommendedProjects = useMemo(() => [
-    {
-      id: '1',
-      title: 'UiPath Process Automation for Finance',
-      company: 'FinTech Corp',
-      location: 'Remote',
-      budget: '₹50,000 - ₹80,000',
-      type: 'Fixed Price',
-      urgency: 'HIGH',
-      verified: true,
-      description: 'Looking for an experienced UiPath developer to automate invoice processing and reconciliation workflows. RE Framework experience required.',
-      skills: ['UiPath', 'RE Framework', 'SQL', 'Excel'],
-      duration: '2-3 weeks',
-      proposals: 12,
-    },
-    {
-      id: '2',
-      title: 'Automation Anywhere Bot Development',
-      company: 'Healthcare Plus',
-      location: 'Remote',
-      budget: '₹35,000 - ₹50,000',
-      type: 'Fixed Price',
-      urgency: 'MEDIUM',
-      verified: true,
-      description: 'Need AA developer to create bots for patient data management and appointment scheduling.',
-      skills: ['Automation Anywhere', 'IQ Bot', 'Python', 'APIs'],
-      duration: '1-2 weeks',
-      proposals: 8,
-    },
-    {
-      id: '3',
-      title: 'Blue Prism CoE Setup',
-      company: 'Enterprise Solutions',
-      location: 'Hybrid - NYC',
-      budget: '₹800/hr',
-      type: 'Hourly',
-      urgency: 'LOW',
-      verified: false,
-      description: 'Seeking Blue Prism expert to help establish Center of Excellence and develop best practices.',
-      skills: ['Blue Prism', 'Process Mining', 'Architecture', 'Training'],
-      duration: 'Ongoing',
-      proposals: 5,
-    },
-  ], []);
+  const [recommendedProjects, setRecommendedProjects] = useState([]);
+  const [activeProjects, setActiveProjects] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const fetchingRef = useRef(false);
 
-  // Mock data for active projects
-  const activeProjects = useMemo(() => [
-    { id: '1', title: 'Invoice Automation Bot', client: 'TechCorp Inc', status: 'IN_PROGRESS', progress: 65, deadline: 'Dec 15, 2024', earnings: '₹42,000' },
-    { id: '2', title: 'Data Migration Scripts', client: 'DataFlow LLC', status: 'REVIEW', progress: 90, deadline: 'Dec 10, 2024', earnings: '₹28,000' },
-    { id: '3', title: 'HR Onboarding Bot', client: 'HR Solutions', status: 'IN_PROGRESS', progress: 35, deadline: 'Dec 28, 2024', earnings: '₹35,000' },
-  ], []);
+  // Fetch real data from API
+  useEffect(() => {
+    // Prevent duplicate calls
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    
+    const fetchData = async () => {
+      let cancelled = false;
+      try {
+        // Fetch recommended projects
+        try {
+          const projectsRes = await statsApi.getRecommendedProjects({ limit: 3 });
+          if (!cancelled) {
+            const formattedProjects = (projectsRes.projects || []).map(p => ({
+              id: p.id,
+              title: p.title,
+              company: p.client?.full_name || 'Company',
+              location: p.is_remote ? 'Remote' : p.location || 'Location TBD',
+              budget: p.budget_min && p.budget_max 
+                ? `₹${p.budget_min.toLocaleString()} - ₹${p.budget_max.toLocaleString()}`
+                : 'Budget TBD',
+              type: p.budget_type === 'fixed' ? 'Fixed Price' : 'Hourly',
+              urgency: p.urgency || 'MEDIUM',
+              verified: p.client?.is_verified || false,
+              description: p.description || '',
+              skills: p.required_skills || [],
+              duration: p.duration || 'Flexible',
+              proposals: p.application_count || 0,
+            }));
+            setRecommendedProjects(formattedProjects);
+          }
+        } catch (error) {
+          if (!cancelled) console.error('Failed to fetch recommended projects:', error);
+        }
 
-  // Mock data for skills
-  const skills = useMemo(() => [
-    { name: 'UiPath', level: 5, proficiency: 95, projects: 24 },
-    { name: 'Automation Anywhere', level: 4, proficiency: 80, projects: 18 },
-    { name: 'Blue Prism', level: 3, proficiency: 65, projects: 8 },
-    { name: 'Python', level: 4, proficiency: 85, projects: 15 },
-  ], []);
+        // Fetch user profile with skills (only if needed)
+        // Note: This is a separate call from the main dashboard profile fetch
+        // We need skills data specifically for the freelancer dashboard
+        try {
+          const profileRes = await profileApi.getMyProfile();
+          if (!cancelled && profileRes.profile) {
+            const userSkills = (profileRes.profile.skills || []).map(s => ({
+              name: s.skill?.name || 'Skill',
+              level: s.proficiency_level === 'expert' ? 5 : s.proficiency_level === 'advanced' ? 4 : s.proficiency_level === 'intermediate' ? 3 : 2,
+              proficiency: s.proficiency_level === 'expert' ? 95 : s.proficiency_level === 'advanced' ? 80 : s.proficiency_level === 'intermediate' ? 65 : 40,
+              projects: s.years_experience || 0,
+            }));
+            setSkills(userSkills.slice(0, 4)); // Show top 4 skills
+          }
+        } catch (error) {
+          if (!cancelled) console.error('Failed to fetch profile:', error);
+          // Don't set skills on error - leave empty array
+        }
 
-  // Mock earnings data
-  const earningsData = useMemo(() => ({
-    thisMonth: '₹48,500',
-    lastMonth: '₹32,000',
-    pending: '₹21,000',
-    totalEarnings: '₹4.25L',
-  }), []);
+        // For active projects, we'd need user's hired projects
+        // For now, leave empty until we have that data
+        if (!cancelled) {
+          setActiveProjects([]);
+        }
+      } catch (error) {
+        if (!cancelled) console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          fetchingRef.current = false;
+        }
+      }
+
+      return () => {
+        cancelled = true;
+      };
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
-      {/* Section: Active Projects */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
-            ACTIVE PROJECTS
-          </h2>
-          <Link to="/projects/active">
-            <Button variant="ghost" className="font-mono text-xs tracking-wider text-secondary">
-              VIEW ALL <ArrowRight className="w-3 h-3 ml-1" />
-            </Button>
-          </Link>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-4">
-          {activeProjects.map((project) => (
-            <ActiveProjectCard key={project.id} project={project} />
-          ))}
-        </div>
-      </section>
-
-      {/* Section: Earnings Overview */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-secondary" />
-            EARNINGS OVERVIEW
-          </h2>
-        </div>
-        
-        <div className="grid md:grid-cols-4 gap-4">
-          <Card className="tech-panel border-border bg-card/50">
-            <CardContent className="p-4">
-              <p className="text-xs font-mono text-muted-foreground mb-1">THIS MONTH</p>
-              <p className="text-2xl font-display font-bold text-secondary">{earningsData.thisMonth}</p>
-              <p className="text-xs text-green-500 flex items-center gap-1 mt-1">
-                <TrendingUp className="w-3 h-3" /> +52% from last month
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="tech-panel border-border bg-card/50">
-            <CardContent className="p-4">
-              <p className="text-xs font-mono text-muted-foreground mb-1">LAST MONTH</p>
-              <p className="text-2xl font-display font-bold text-foreground">{earningsData.lastMonth}</p>
-            </CardContent>
-          </Card>
-          <Card className="tech-panel border-border bg-card/50">
-            <CardContent className="p-4">
-              <p className="text-xs font-mono text-muted-foreground mb-1">PENDING</p>
-              <p className="text-2xl font-display font-bold text-accent">{earningsData.pending}</p>
-              <p className="text-xs text-muted-foreground mt-1">3 invoices pending</p>
-            </CardContent>
-          </Card>
-          <Card className="tech-panel border-border bg-card/50">
-            <CardContent className="p-4">
-              <p className="text-xs font-mono text-muted-foreground mb-1">TOTAL EARNINGS</p>
-              <p className="text-2xl font-display font-bold text-primary">{earningsData.totalEarnings}</p>
-              <p className="text-xs text-muted-foreground mt-1">Since joining</p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
       {/* Section: Skills & Expertise */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
-            <Award className="w-5 h-5 text-accent" />
-            SKILLS & EXPERTISE
-          </h2>
-          <Link to="/profile-setup">
-            <Button variant="ghost" className="font-mono text-xs tracking-wider text-secondary">
-              UPDATE SKILLS <ArrowRight className="w-3 h-3 ml-1" />
-            </Button>
-          </Link>
-        </div>
-        
-        <div className="grid md:grid-cols-4 gap-4">
-          {skills.map((skill) => (
-            <SkillBadge key={skill.name} skill={skill} />
-          ))}
-        </div>
-      </section>
+      {skills.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
+              <Award className="w-5 h-5 text-accent" />
+              SKILLS & EXPERTISE
+            </h2>
+            <Link to="/dashboard?section=profile">
+              <Button variant="ghost" className="font-mono text-xs tracking-wider text-secondary">
+                UPDATE SKILLS <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="grid md:grid-cols-4 gap-4">
+            {skills.map((skill) => (
+              <SkillBadge key={skill.name} skill={skill} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Section: Recommended Projects */}
       <section>
@@ -327,11 +288,23 @@ export const FreelancerDashboard = memo(() => {
           </Link>
         </div>
         
-        <div className="grid lg:grid-cols-3 gap-4">
-          {recommendedProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-        </div>
+        {recommendedProjects.length > 0 ? (
+          <div className="grid lg:grid-cols-3 gap-4">
+            {recommendedProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+        ) : (
+          <Card className="tech-panel border-border bg-card/50">
+            <CardContent className="p-8 text-center">
+              <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">No recommended projects at the moment.</p>
+              <Link to="/projects">
+                <Button className="font-mono text-xs">BROWSE ALL PROJECTS</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
       </section>
 
       {/* Section: Quick Links */}

@@ -94,6 +94,23 @@ export const useAuthStore = create((set, get) => ({
       
       return { success: true, user };
     } catch (error) {
+      // Check if it's an account exists error
+      if (error.status === 409 && error.data?.code === 'ACCOUNT_EXISTS') {
+        set({
+          isLoading: false,
+          error: error.data.message || 'Account already exists'
+        });
+        return { 
+          success: false, 
+          error: error.data.message || 'Account already exists',
+          status: error.status,
+          code: 'ACCOUNT_EXISTS',
+          requiresVerification: error.data.requiresVerification,
+          email: error.data.email,
+          emailVerified: error.data.emailVerified
+        };
+      }
+      
       const errorMessage = error.message || error.error || 'Registration failed';
       set({
         isLoading: false,
@@ -249,56 +266,9 @@ export const useAuthStore = create((set, get) => ({
     }
   },
   
-  // GitHub Sign-In (initiates redirect)
-  loginWithGitHub: () => {
-    try {
-      if (!oAuthHelper.isGitHubConfigured()) {
-        set({ 
-          error: 'GitHub OAuth is not configured. Please set VITE_GITHUB_CLIENT_ID in your environment variables.' 
-        });
-        return { success: false, error: 'GitHub OAuth not configured' };
-      }
-      
-      // Initiate GitHub OAuth redirect
-      oAuthHelper.signInWithGitHub();
-      return { success: true, redirecting: true };
-    } catch (error) {
-      set({ error: error.message || 'GitHub sign-in failed' });
-      return { success: false, error: error.message };
-    }
-  },
-  
-  // Handle GitHub OAuth callback
-  handleGitHubCallback: async (code, state) => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      const { user, token, refreshToken } = await oAuthHelper.handleGitHubCallback(code, state);
-      
-      tokenManager.setTokens(token, refreshToken);
-      
-      set({
-        user,
-        profile: user,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null
-      });
-      
-      return { success: true, user };
-    } catch (error) {
-      set({
-        isLoading: false,
-        error: error.message || 'GitHub authentication failed'
-      });
-      return { success: false, error: error.message };
-    }
-  },
-  
   // Check OAuth availability
   getOAuthStatus: () => ({
     google: oAuthHelper.isGoogleConfigured(),
-    github: oAuthHelper.isGitHubConfigured(),
   }),
 }));
 

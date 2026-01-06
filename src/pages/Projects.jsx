@@ -4,10 +4,15 @@ import {
   Search, Filter, MapPin, Building2, Clock, DollarSign, Star,
   ChevronDown, CheckCircle, ArrowRight, Eye, Users, Briefcase,
   SlidersHorizontal, X, Grid3X3, List, Zap, Award, Globe,
-  ArrowUpRight, Bot, Workflow, CircuitBoard, Layers, Database
+  ArrowUpRight, Bot, Workflow, CircuitBoard, Layers, Database, Plus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { projectApi } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { useAuthStore } from '../store/authStore';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { useDebounce } from '../hooks/useDebounce';
 
 // ============================================================================
 // FILTER PILL COMPONENT
@@ -268,6 +273,10 @@ PlatformFilter.displayName = 'PlatformFilter';
 // MAIN PROJECTS PAGE COMPONENT
 // ============================================================================
 export const Projects = memo(() => {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { user, role } = useAuthStore();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('list');
   const [showFilters, setShowFilters] = useState(true);
@@ -275,179 +284,128 @@ export const Projects = memo(() => {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedUrgency, setSelectedUrgency] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
+  
+  // Debounce search query
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  
+  // API state
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0
+  });
 
-  // Platform filters
+  // Reset pagination when search or filters change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [debouncedSearchQuery, selectedPlatforms, sortBy]);
+
+  // Fetch projects from API
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true);
+      try {
+        const params = {
+          page: pagination.page,
+          limit: pagination.limit,
+          search: debouncedSearchQuery.trim() || undefined,
+          technology: selectedPlatforms.length > 0 ? selectedPlatforms[0] : undefined,
+          status: 'open',
+          sort: sortBy === 'newest' ? 'created_at' : sortBy === 'budget-high' ? 'budget_max' : 'created_at',
+          order: sortBy === 'budget-high' ? 'desc' : 'desc'
+        };
+
+        // Remove undefined params
+        Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+
+        const response = await projectApi.getAll(params);
+        setProjects(response.projects || []);
+        setPagination(prev => ({
+          ...prev,
+          ...response.pagination
+        }));
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        toast.error(error.error || 'Failed to load projects');
+        setProjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchQuery, selectedPlatforms, sortBy, pagination.page]);
+
+  // Transform backend project data to frontend format
+  const transformedProjects = useMemo(() => {
+    return projects.map(project => ({
+      id: project.id,
+      title: project.title,
+      company: project.client?.company_name || project.client?.full_name || 'Client',
+      location: 'Remote', // Backend doesn't have location field yet
+      budget: project.budget_min && project.budget_max
+        ? `₹${project.budget_min.toLocaleString()} - ₹${project.budget_max.toLocaleString()}`
+        : project.budget_min
+          ? `₹${project.budget_min.toLocaleString()}+`
+          : 'Not specified',
+      type: 'Fixed Price', // Backend doesn't distinguish yet
+      urgency: project.urgency?.toUpperCase() || 'MEDIUM',
+      verified: project.client?.is_verified || false,
+      featured: false, // Backend doesn't have this field yet
+      description: project.description || '',
+      skills: project.technologies || [],
+      duration: project.deadline ? `Until ${new Date(project.deadline).toLocaleDateString()}` : 'Not specified',
+      proposals: project.application_count || 0,
+      views: 0, // Backend doesn't track views yet
+      posted: project.created_at ? new Date(project.created_at).toLocaleDateString() : 'Recently',
+      platform: project.technologies?.[0]?.toLowerCase() || 'other'
+    }));
+  }, [projects]);
+
+  // Platform filters (static for now, could be fetched from taxonomy API)
   const platforms = useMemo(() => [
-    { id: 'uipath', name: 'UiPath', icon: Bot, count: 48 },
-    { id: 'aa', name: 'Automation Anywhere', icon: Workflow, count: 32 },
-    { id: 'blueprism', name: 'Blue Prism', icon: CircuitBoard, count: 24 },
-    { id: 'powerautomate', name: 'Power Automate', icon: Zap, count: 18 },
-    { id: 'workfusion', name: 'WorkFusion', icon: Database, count: 12 },
-    { id: 'pega', name: 'Pega', icon: Layers, count: 8 },
+    { id: 'uipath', name: 'UiPath', icon: Bot, count: 0 },
+    { id: 'aa', name: 'Automation Anywhere', icon: Workflow, count: 0 },
+    { id: 'blueprism', name: 'Blue Prism', icon: CircuitBoard, count: 0 },
+    { id: 'powerautomate', name: 'Power Automate', icon: Zap, count: 0 },
+    { id: 'workfusion', name: 'WorkFusion', icon: Database, count: 0 },
+    { id: 'pega', name: 'Pega', icon: Layers, count: 0 },
   ], []);
 
-  // Mock project data
-  const allProjects = useMemo(() => [
-    {
-      id: '1',
-      title: 'UiPath Process Automation for Finance Department',
-      company: 'FinTech Global Corp',
-      location: 'Remote',
-      budget: '$8,000 - $12,000',
-      type: 'Fixed Price',
-      urgency: 'HIGH',
-      verified: true,
-      featured: true,
-      description: 'Looking for an experienced UiPath developer to automate invoice processing, reconciliation workflows, and financial reporting. Must have RE Framework experience and strong SQL skills.',
-      skills: ['UiPath', 'RE Framework', 'SQL', 'Excel', 'Orchestrator', 'SAP'],
-      duration: '4-6 weeks',
-      proposals: 18,
-      views: 342,
-      posted: '2 days ago',
-      platform: 'uipath',
-    },
-    {
-      id: '2',
-      title: 'Automation Anywhere Bot Development for Healthcare',
-      company: 'Healthcare Plus Systems',
-      location: 'Remote',
-      budget: '$5,000 - $7,500',
-      type: 'Fixed Price',
-      urgency: 'MEDIUM',
-      verified: true,
-      featured: false,
-      description: 'Need AA developer to create bots for patient data management, appointment scheduling, and insurance claim processing. HIPAA compliance knowledge required.',
-      skills: ['Automation Anywhere', 'IQ Bot', 'Python', 'APIs', 'HIPAA'],
-      duration: '3-4 weeks',
-      proposals: 12,
-      views: 234,
-      posted: '4 days ago',
-      platform: 'aa',
-    },
-    {
-      id: '3',
-      title: 'Blue Prism Center of Excellence Setup',
-      company: 'Enterprise Solutions Inc',
-      location: 'Hybrid - New York',
-      budget: '$15,000 - $25,000',
-      type: 'Fixed Price',
-      urgency: 'HIGH',
-      verified: true,
-      featured: true,
-      description: 'Seeking Blue Prism expert to help establish Center of Excellence, develop best practices, create governance framework, and train internal team.',
-      skills: ['Blue Prism', 'Process Mining', 'Architecture', 'Training', 'Governance'],
-      duration: '8-12 weeks',
-      proposals: 8,
-      views: 456,
-      posted: '1 week ago',
-      platform: 'blueprism',
-    },
-    {
-      id: '4',
-      title: 'Power Automate Cloud Flows for Sales Team',
-      company: 'SalesForce Dynamics',
-      location: 'Remote',
-      budget: '$2,500 - $4,000',
-      type: 'Fixed Price',
-      urgency: 'LOW',
-      verified: false,
-      featured: false,
-      description: 'Create automated workflows for lead management, email notifications, and CRM data synchronization using Power Automate.',
-      skills: ['Power Automate', 'Microsoft 365', 'Dynamics 365', 'SharePoint'],
-      duration: '2-3 weeks',
-      proposals: 24,
-      views: 189,
-      posted: '3 days ago',
-      platform: 'powerautomate',
-    },
-    {
-      id: '5',
-      title: 'RPA Solution Architecture Consultation',
-      company: 'Global Manufacturing Ltd',
-      location: 'Remote',
-      budget: '$120/hour',
-      type: 'Hourly',
-      urgency: 'MEDIUM',
-      verified: true,
-      featured: false,
-      description: 'Need RPA architect to evaluate current processes, design automation roadmap, and recommend optimal technology stack for manufacturing operations.',
-      skills: ['UiPath', 'Automation Anywhere', 'Process Mining', 'Architecture', 'Consulting'],
-      duration: 'Ongoing',
-      proposals: 6,
-      views: 278,
-      posted: '5 days ago',
-      platform: 'uipath',
-    },
-    {
-      id: '6',
-      title: 'Document Processing Bot with IQ Bot',
-      company: 'Legal Services Corp',
-      location: 'Remote',
-      budget: '$6,000 - $9,000',
-      type: 'Fixed Price',
-      urgency: 'HIGH',
-      verified: true,
-      featured: true,
-      description: 'Develop intelligent document processing solution using IQ Bot for contract analysis, data extraction, and legal document categorization.',
-      skills: ['Automation Anywhere', 'IQ Bot', 'ML', 'NLP', 'Document Processing'],
-      duration: '5-7 weeks',
-      proposals: 15,
-      views: 312,
-      posted: '1 day ago',
-      platform: 'aa',
-    },
-  ], []);
-
-  // Filter projects
+  // Filter projects (client-side filtering for urgency and type)
   const filteredProjects = useMemo(() => {
-    let result = [...allProjects];
+    let result = [...transformedProjects];
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    // Platform filter (client-side, backend already filters by technology)
+    if (selectedPlatforms.length > 0) {
       result = result.filter(p => 
-        p.title.toLowerCase().includes(query) ||
-        p.company.toLowerCase().includes(query) ||
-        p.skills.some(s => s.toLowerCase().includes(query))
+        selectedPlatforms.some(platform => 
+          p.skills.some(skill => skill.toLowerCase().includes(platform.toLowerCase()))
+        )
       );
     }
 
-    // Platform filter
-    if (selectedPlatforms.length > 0) {
-      result = result.filter(p => selectedPlatforms.includes(p.platform));
-    }
-
-    // Type filter
+    // Type filter (client-side, backend doesn't support this yet)
     if (selectedType !== 'all') {
-      result = result.filter(p => p.type.toLowerCase().includes(selectedType));
+      // Skip for now as backend doesn't distinguish fixed/hourly
     }
 
-    // Urgency filter
+    // Urgency filter (client-side)
     if (selectedUrgency !== 'all') {
       result = result.filter(p => p.urgency === selectedUrgency);
     }
 
-    // Sort
-    switch (sortBy) {
-      case 'newest':
-        // Already sorted by newest in mock data
-        break;
-      case 'budget-high':
-        result.sort((a, b) => {
-          const aMax = parseInt(a.budget.replace(/[^0-9]/g, '')) || 0;
-          const bMax = parseInt(b.budget.replace(/[^0-9]/g, '')) || 0;
-          return bMax - aMax;
-        });
-        break;
-      case 'proposals':
-        result.sort((a, b) => a.proposals - b.proposals);
-        break;
-      default:
-        break;
+    // Sort (most sorting done by backend, but we can do client-side for proposals)
+    if (sortBy === 'proposals') {
+      result.sort((a, b) => a.proposals - b.proposals);
     }
 
     return result;
-  }, [allProjects, searchQuery, selectedPlatforms, selectedType, selectedUrgency, sortBy]);
+  }, [transformedProjects, selectedPlatforms, selectedType, selectedUrgency, sortBy]);
 
   // Toggle platform filter
   const togglePlatform = useCallback((platformId) => {
@@ -487,9 +445,21 @@ export const Projects = memo(() => {
                 BROWSE <span className="text-primary">PROJECTS</span>
               </h1>
             </div>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Discover automation projects from top companies worldwide.
-            </p>
+            <div className="flex flex-col gap-3">
+              {(role === 'client' || role === 'employer') ? (
+                <Button
+                  onClick={() => navigate('/register/project')}
+                  className="bg-primary hover:bg-primary/90 font-mono text-xs tracking-wider"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  POST PROJECT
+                </Button>
+              ) : (
+                <p className="text-sm text-muted-foreground max-w-md text-right">
+                  Only clients and employers can post projects. Looking for work? Browse available projects below.
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -631,7 +601,14 @@ export const Projects = memo(() => {
             {/* Results Header */}
             <div className="flex items-center justify-between mb-4">
               <p className="text-muted-foreground font-mono text-sm">
-                Showing <span className="text-foreground font-bold">{filteredProjects.length}</span> projects
+                {loading ? (
+                  <span>Loading projects...</span>
+                ) : (
+                  <>
+                    Showing <span className="text-foreground font-bold">{filteredProjects.length}</span> of{' '}
+                    <span className="text-foreground font-bold">{pagination.total}</span> projects
+                  </>
+                )}
               </p>
               {hasActiveFilters && (
                 <div className="flex items-center gap-2">
@@ -651,7 +628,11 @@ export const Projects = memo(() => {
             </div>
 
             {/* Projects */}
-            {filteredProjects.length > 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <LoadingSpinner />
+              </div>
+            ) : filteredProjects.length > 0 ? (
               <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 gap-4' : 'space-y-4'}>
                 {filteredProjects.map((project) => (
                   <ProjectCard key={project.id} project={project} viewMode={viewMode} />
@@ -670,13 +651,21 @@ export const Projects = memo(() => {
               </Card>
             )}
 
-            {/* Load More */}
-            {filteredProjects.length > 0 && (
+            {/* Load More / Pagination */}
+            {!loading && filteredProjects.length > 0 && pagination.totalPages > pagination.page && (
               <div className="mt-6 text-center">
-                <Button variant="outline" size="lg" className="font-mono tracking-wider">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="font-mono tracking-wider"
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                >
                   LOAD MORE PROJECTS
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Page {pagination.page} of {pagination.totalPages}
+                </p>
               </div>
             )}
           </div>

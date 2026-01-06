@@ -1,6 +1,7 @@
 import { memo, useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/Button";
+import { useAuthStore } from "../store/authStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card";
 import { 
   Users, Briefcase, Code, ArrowRight, CheckCircle, MessageSquare, 
@@ -350,6 +351,7 @@ UserTypeCard.displayName = 'UserTypeCard';
 // ============================================================================
 export const Home = memo(() => {
   const navigate = useNavigate();
+  const { isAuthenticated, role } = useAuthStore();
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -592,26 +594,160 @@ export const Home = memo(() => {
                   or scale your automation expertise—your mission starts here.
                 </p>
                 
-                {/* CTA Buttons */}
+                {/* CTA Buttons - Role-based */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-                  <Button 
-                    size="lg" 
-                    onClick={() => navigate('/register')}
-                    className="bg-primary hover:bg-primary/90 text-sm px-10 py-7 font-display tracking-wider glow-red group text-lg"
-                  >
-                    <Rocket className="mr-2 h-5 w-5" />
-                    START YOUR MISSION
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    onClick={() => navigate('/sign-in')}
-                    className="text-sm px-10 py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary text-lg"
-                  >
-                    <Play className="mr-2 h-5 w-5" />
-                    EXPLORE PLATFORM
-                  </Button>
+                  {isAuthenticated ? (
+                    <>
+                      {(role === 'client' || role === 'employer') ? (
+                        <>
+                          <Button 
+                            size="lg" 
+                            onClick={() => navigate(role === 'employer' ? '/post-job' : '/register/project')}
+                            className="bg-primary hover:bg-primary/90 text-sm px-10 py-7 font-display tracking-wider glow-red group text-lg"
+                          >
+                            <Rocket className="mr-2 h-5 w-5" />
+                            {role === 'employer' ? 'POST A JOB' : 'POST A PROJECT'}
+                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                          </Button>
+                          <Button 
+                            size="lg" 
+                            variant="outline" 
+                            onClick={() => navigate('/talent')}
+                            className="text-sm px-10 py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary text-lg"
+                          >
+                            <Users className="mr-2 h-5 w-5" />
+                            FIND TALENT
+                          </Button>
+                        </>
+                      ) : role === 'job_seeker' ? (
+                        <>
+                          <Button 
+                            size="lg" 
+                            onClick={() => navigate('/jobs')}
+                            className="bg-primary hover:bg-primary/90 text-sm px-10 py-7 font-display tracking-wider glow-red group text-lg"
+                          >
+                            <Briefcase className="mr-2 h-5 w-5" />
+                            BROWSE JOBS
+                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                          </Button>
+                          <Button 
+                            size="lg" 
+                            variant="outline" 
+                            onClick={() => navigate('/dashboard?section=profile')}
+                            className="text-sm px-10 py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary text-lg"
+                          >
+                            <UserCheck className="mr-2 h-5 w-5" />
+                            CREATE PROFILE
+                          </Button>
+                        </>
+                      ) : role === 'freelancer' ? (
+                        <>
+                          <Button 
+                            size="lg" 
+                            onClick={() => navigate('/projects')}
+                            className="bg-primary hover:bg-primary/90 text-sm px-10 py-7 font-display tracking-wider glow-red group text-lg"
+                          >
+                            <Briefcase className="mr-2 h-5 w-5" />
+                            BROWSE PROJECTS
+                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                          </Button>
+                          <Button 
+                            size="lg" 
+                            variant="outline" 
+                            onClick={() => navigate('/dashboard?section=portfolio')}
+                            className="text-sm px-10 py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary text-lg"
+                          >
+                            <Briefcase className="mr-2 h-5 w-5" />
+                            CREATE PORTFOLIO
+                          </Button>
+                        </>
+                      ) : role === 'trainer' ? (
+                        <>
+                          <Button 
+                            size="lg" 
+                            onClick={() => navigate('/dashboard?section=courses')}
+                            className="bg-primary hover:bg-primary/90 text-sm px-10 py-7 font-display tracking-wider glow-red group text-lg"
+                          >
+                            <GraduationCap className="mr-2 h-5 w-5" />
+                            CREATE COURSE
+                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                          </Button>
+                          <Button 
+                            size="lg" 
+                            variant="outline" 
+                            onClick={() => navigate('/dashboard?section=students')}
+                            className="text-sm px-10 py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary text-lg"
+                          >
+                            <Users className="mr-2 h-5 w-5" />
+                            VIEW STUDENTS
+                          </Button>
+                        </>
+                      ) : (role === 'ba_pm' || role === 'developer') ? (
+                        <>
+                          <Button 
+                            size="lg" 
+                            onClick={() => navigate('/projects')}
+                            className="bg-primary hover:bg-primary/90 text-sm px-10 py-7 font-display tracking-wider glow-red group text-lg"
+                          >
+                            <Briefcase className="mr-2 h-5 w-5" />
+                            BROWSE PROJECTS
+                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                          </Button>
+                          <Button 
+                            size="lg" 
+                            variant="outline" 
+                            onClick={() => navigate('/dashboard?section=analytics')}
+                            className="text-sm px-10 py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary text-lg"
+                          >
+                            <Activity className="mr-2 h-5 w-5" />
+                            VIEW ANALYTICS
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button 
+                            size="lg" 
+                            onClick={() => navigate('/register')}
+                            className="bg-primary hover:bg-primary/90 text-sm px-10 py-7 font-display tracking-wider glow-red group text-lg"
+                          >
+                            <Rocket className="mr-2 h-5 w-5" />
+                            START YOUR MISSION
+                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                          </Button>
+                          <Button 
+                            size="lg" 
+                            variant="outline" 
+                            onClick={() => navigate('/sign-in')}
+                            className="text-sm px-10 py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary text-lg"
+                          >
+                            <Play className="mr-2 h-5 w-5" />
+                            EXPLORE PLATFORM
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Button 
+                        size="lg" 
+                        onClick={() => navigate('/register')}
+                        className="bg-primary hover:bg-primary/90 text-sm px-10 py-7 font-display tracking-wider glow-red group text-lg"
+                      >
+                        <Rocket className="mr-2 h-5 w-5" />
+                        START YOUR MISSION
+                        <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                      <Button 
+                        size="lg" 
+                        variant="outline" 
+                        onClick={() => navigate('/sign-in')}
+                        className="text-sm px-10 py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary text-lg"
+                      >
+                        <Play className="mr-2 h-5 w-5" />
+                        EXPLORE PLATFORM
+                      </Button>
+                    </>
+                  )}
                 </div>
 
                 {/* Scroll indicator */}

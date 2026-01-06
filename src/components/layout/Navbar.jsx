@@ -4,8 +4,10 @@ import { Rocket, Menu, X, User, LogOut, Settings } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ThemeSwitcher } from '../ui/ThemeSwitcher';
 import { Container } from './Container';
+import { GlobalSearch } from '../common/GlobalSearch';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../hooks/useToast';
+import { preloadRoute } from '../../utils/preload';
 
 export const Navbar = memo(() => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -15,7 +17,7 @@ export const Navbar = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user, logout } = useAuthStore();
-  const { toast } = useToast();
+  const toast = useToast();
 
   const navLinks = useMemo(() => [
     { to: '/', label: 'SERVICES' },
@@ -85,13 +87,14 @@ export const Navbar = memo(() => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1 flex-1">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.to;
               return (
                 <Link
                   key={link.to}
                   to={link.to}
+                  onMouseEnter={() => preloadRoute(link.to)}
                   className={`
                     px-4 py-2 rounded-lg
                     text-xs font-display tracking-widest
@@ -106,6 +109,11 @@ export const Navbar = memo(() => {
                 </Link>
               );
             })}
+            
+            {/* Search Bar - Wide and in one line */}
+            <div className="flex-1 max-w-xl mx-4">
+              <GlobalSearch />
+            </div>
           </div>
 
           {/* Right Side */}
@@ -115,6 +123,7 @@ export const Navbar = memo(() => {
               <>
                 <Link
                   to="/dashboard"
+                  onMouseEnter={() => preloadRoute('/dashboard')}
                   className="text-muted-foreground hover:text-foreground font-display text-xs tracking-wider transition-colors duration-200"
                 >
                   DASHBOARD
