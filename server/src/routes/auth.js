@@ -37,10 +37,12 @@ router.post('/register', registerValidation, asyncHandler(async (req, res) => {
       .single();
     
     if (existingProfile) {
-      return res.status(409).json({ 
-        error: 'User with this email already exists',
-        message: 'Please log in instead of registering again. You can also use Google OAuth to merge accounts.'
-      });
+      return res.status(409)
+        .set('Content-Type', 'application/json')
+        .json({ 
+          error: 'User with this email already exists',
+          message: 'Please log in instead of registering again. You can also use Google OAuth to merge accounts.'
+        });
     }
   }
 
@@ -70,14 +72,16 @@ router.post('/register', registerValidation, asyncHandler(async (req, res) => {
         .single();
 
       if (existingUser) {
-        return res.status(409).json({
-          error: 'Account already exists',
-          code: 'ACCOUNT_EXISTS',
-          message: 'An account with this email already exists. Please verify your email to recover your account.',
-          requiresVerification: true,
-          email: normalizedEmail,
-          emailVerified: existingUser.email_verified || false
-        });
+        return res.status(409)
+          .set('Content-Type', 'application/json')
+          .json({
+            error: 'Account already exists',
+            code: 'ACCOUNT_EXISTS',
+            message: 'An account with this email already exists. Please verify your email to recover your account.',
+            requiresVerification: true,
+            email: normalizedEmail,
+            emailVerified: existingUser.email_verified || false
+          });
       }
     }
     

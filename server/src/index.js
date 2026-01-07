@@ -149,7 +149,24 @@ if (process.env.NODE_ENV === 'production') {
   }
   
   // Serve static assets (CSS, JS, images, etc.)
-  app.use(express.static(distPath, { index: false }));
+  // Set proper headers for static files including images
+  app.use(express.static(distPath, { 
+    index: false,
+    setHeaders: (res, filePath) => {
+      // Set CORS headers for static assets
+      res.set('Access-Control-Allow-Origin', '*');
+      
+      // Set cache headers for images
+      if (filePath.endsWith('.png') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.svg') || filePath.endsWith('.gif') || filePath.endsWith('.webp')) {
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
+        res.set('Content-Type', filePath.endsWith('.svg') ? 'image/svg+xml' : 
+                              filePath.endsWith('.png') ? 'image/png' :
+                              filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') ? 'image/jpeg' :
+                              filePath.endsWith('.gif') ? 'image/gif' :
+                              filePath.endsWith('.webp') ? 'image/webp' : 'image/png');
+      }
+    }
+  }));
 }
 
 // Health check endpoint

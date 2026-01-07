@@ -75,7 +75,42 @@ export const tokenManager = {
 };
 
 const handleResponse = async (response) => {
-  const data = await response.json().catch(() => ({}));
+  // Get content type to determine how to parse response
+  const contentType = response.headers.get('content-type');
+  let data = {};
+  
+  // Only try to parse JSON if content-type indicates JSON
+  if (contentType && contentType.includes('application/json')) {
+    try {
+      const text = await response.text();
+      if (text) {
+        data = JSON.parse(text);
+      }
+    } catch (error) {
+      console.error('[API] Failed to parse JSON response:', error);
+      // If parsing fails, try to extract error from text
+      try {
+        const text = await response.text();
+        if (text) {
+          data = { error: text, message: text };
+        }
+      } catch {
+        // If all parsing fails, use empty object
+        data = {};
+      }
+    }
+  } else {
+    // For non-JSON responses, try to get text
+    try {
+      const text = await response.text();
+      if (text) {
+        data = { error: text, message: text };
+      }
+    } catch {
+      // If text parsing fails, use empty object
+      data = {};
+    }
+  }
 
   if (!response.ok) {
     // Handle rate limiting (429)
@@ -85,6 +120,20 @@ const handleResponse = async (response) => {
         data.error || data.message || `Too many requests. Please try again after ${retryAfter} seconds.`,
         response.status,
         { ...data, retryAfter: parseInt(retryAfter) }
+      );
+    }
+
+    // Handle conflict errors (409) - Account already exists
+    if (response.status === 409) {
+      throw new ApiError(
+        data.error || data.message || 'An account with this email already exists. Please log in instead.',
+        response.status,
+        {
+          ...data,
+          code: data.code || 'ACCOUNT_EXISTS',
+          requiresVerification: data.requiresVerification || false,
+          email: data.email
+        }
       );
     }
 
