@@ -761,10 +761,21 @@ export const Home = memo(() => {
         </div>
       </section>
 
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
       {/* ================================================================== */}
       {/* STATS SECTION */}
       {/* ================================================================== */}
-      <section id="stats" className="py-12 md:py-20 px-4 md:px-6 relative">
+      <section id="stats" className="py-8 md:py-12 px-4 md:px-6 relative">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="tech-panel-strong rounded-2xl p-6 sm:p-8 md:p-10 corner-brackets relative overflow-hidden">
@@ -795,10 +806,21 @@ export const Home = memo(() => {
         </div>
       </section>
 
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
       {/* ================================================================== */}
       {/* USER TYPES SECTION - Register as... */}
       {/* ================================================================== */}
-      <section id="register" className="py-16 md:py-24 px-4 md:px-6">
+      <section id="register" className="py-8 md:py-12 px-4 md:px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="text-center mb-10 md:mb-16">
@@ -824,10 +846,21 @@ export const Home = memo(() => {
         </div>
       </section>
 
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
       {/* ================================================================== */}
       {/* HIRING SECTION - Hire a... */}
       {/* ================================================================== */}
-      <section id="hire" className="py-16 md:py-24 px-4 md:px-6 relative">
+      <section id="hire" className="py-8 md:py-12 px-4 md:px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/5 to-transparent" />
 
         <div className="container mx-auto relative">
@@ -882,10 +915,21 @@ export const Home = memo(() => {
         </div>
       </section>
 
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
       {/* ================================================================== */}
       {/* SERVICES SECTION */}
       {/* ================================================================== */}
-      <section id="services" className="py-24 px-6">
+      <section id="services" className="py-8 md:py-12 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -907,10 +951,21 @@ export const Home = memo(() => {
         </div>
       </section>
 
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
       {/* ================================================================== */}
       {/* PLATFORMS SECTION */}
       {/* ================================================================== */}
-      <section className="py-24 px-6">
+      <section className="py-8 md:py-12 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -932,10 +987,21 @@ export const Home = memo(() => {
         </div>
       </section>
 
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
       {/* ================================================================== */}
       {/* FEATURES SECTION */}
       {/* ================================================================== */}
-      <section className="py-24 px-6 relative">
+      <section className="py-8 md:py-12 px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
 
         <div className="container mx-auto relative">
@@ -964,10 +1030,21 @@ export const Home = memo(() => {
         </div>
       </section>
 
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
       {/* ================================================================== */}
       {/* JOBS SECTION */}
       {/* ================================================================== */}
-      <section id="jobs" className="py-24 px-6">
+      <section id="jobs" className="py-8 md:py-12 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -1000,10 +1077,21 @@ export const Home = memo(() => {
         </div>
       </section>
 
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
       {/* ================================================================== */}
       {/* PROCESS SECTION */}
       {/* ================================================================== */}
-      <section id="process" className="py-24 px-6">
+      <section id="process" className="py-8 md:py-12 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -1062,10 +1150,21 @@ export const Home = memo(() => {
         </div>
       </section>
 
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
       {/* ================================================================== */}
       {/* FINAL CTA SECTION */}
       {/* ================================================================== */}
-      <section className="py-24 px-6">
+      <section className="py-8 md:py-12 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="tech-panel-strong rounded-3xl p-12 md:p-16 text-center relative overflow-hidden border-glow-red">

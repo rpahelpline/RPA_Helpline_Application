@@ -80,7 +80,7 @@ export const Navbar = memo(() => {
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-3 group"
+            className="flex items-center gap-3 group -ml-2 md:-ml-4"
           >
             <img
               src="/logo.png"
