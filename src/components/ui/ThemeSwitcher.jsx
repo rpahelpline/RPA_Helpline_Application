@@ -11,7 +11,7 @@ export const ThemeSwitcher = memo(() => {
     setTimeout(() => setIsAnimating(false), 600);
   };
 
-  const isDark = theme === 'dark';
+  const isDark = theme === 'light';
 
   return (
     <button
