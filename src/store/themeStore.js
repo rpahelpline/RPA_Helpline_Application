@@ -11,12 +11,12 @@ const getInitialTheme = () => {
       return saved.theme;
     }
     // Check system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
     }
-    return 'dark';
+    return 'light';
   } catch {
-    return 'dark';
+    return 'light';
   }
 };
 
