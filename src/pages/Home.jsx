@@ -1162,6 +1162,52 @@ export const Home = memo(() => {
       </div>
 
       {/* ================================================================== */}
+      {/* SUPPORT SECTION */}
+      {/* ================================================================== */}
+      <section id="support" className="py-8 md:py-12 px-6">
+        <div className="container mx-auto">
+          <ScrollReveal>
+            <div className="text-center mb-10 md:mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 tech-panel rounded-full mb-4 md:mb-6">
+                <MessageSquare className="w-3 h-3 md:w-4 md:h-4 text-primary" />
+                <span className="text-[10px] md:text-xs font-mono text-primary tracking-wider">CUSTOMER SUPPORT</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground tracking-wider mb-4 md:mb-6">
+                NEED <span className="text-primary">HELP</span>?
+              </h2>
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
+                Have questions, feedback, or need assistance? Our support team is here to help you.
+                Submit your inquiry and we'll get back to you promptly.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal>
+            <div className="text-center">
+              <Link to="/support">
+                <Button size="lg" className="bg-primary hover:bg-primary/90 font-display text-sm tracking-wider glow-red group px-10">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  CONTACT SUPPORT
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* Section Separator */}
+      <div className="border-t border-border/30 my-8 md:my-12">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-center gap-4 py-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================================== */}
       {/* FINAL CTA SECTION */}
       {/* ================================================================== */}
       <section className="py-8 md:py-12 px-6">
@@ -1197,7 +1243,7 @@ export const Home = memo(() => {
                       <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
-                  <Link to="/sign-in">
+                  <Link to="/support">
                     <Button size="lg" variant="outline" className="font-display text-sm tracking-wider border-foreground/30 hover:bg-foreground/10 px-10 py-7 text-lg">
                       <Navigation className="mr-2 h-5 w-5" />
                       CONTACT SUPPORT

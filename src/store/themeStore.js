@@ -10,13 +10,10 @@ const getInitialTheme = () => {
     if (saved?.theme) {
       return saved.theme;
     }
-    // Check system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
-    }
-    return 'dark';
+    // Default to light theme
+    return 'light';
   } catch {
-    return 'dark';
+    return 'light';
   }
 };
 

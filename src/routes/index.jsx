@@ -59,6 +59,7 @@ const Messages = lazyLoad(() => import('../pages/Messages'), 'Messages');
 const Notifications = lazyLoad(() => import('../pages/Notifications'), 'Notifications');
 const SearchPage = lazyLoad(() => import('../pages/Search'), 'SearchPage');
 const AdminDashboard = lazyLoad(() => import('../pages/Admin/AdminDashboard'), 'AdminDashboard');
+const Support = lazyLoad(() => import('../pages/Support'), 'Support');
 
 // Training/Courses pages
 const Courses = lazyLoad(() => import('../pages/Training/Courses'), 'Courses');
@@ -169,6 +170,7 @@ export const AppRoutes = () => {
             }
           />
           <Route path="/how-it-works" element={<RouteWrapper><HowItWorks /></RouteWrapper>} />
+          <Route path="/support" element={<RouteWrapper><Support /></RouteWrapper>} />
           <Route path="/register" element={<RouteWrapper><Register /></RouteWrapper>} />
           <Route path="/register/client" element={<RouteWrapper><RegisterClient /></RouteWrapper>} />
           <Route path="/register/freelancer" element={<RouteWrapper><RegisterFreelancer /></RouteWrapper>} />

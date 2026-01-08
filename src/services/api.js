@@ -669,6 +669,12 @@ export const adminApi = {
   // Notifications
   getNotifications: (params) => api.get('/admin/notifications', params),
   sendBroadcast: (data) => api.post('/admin/notifications/broadcast', data),
+
+  // Support Submissions
+  getSupportSubmissions: (params) => api.get('/support/submissions', params),
+  getSupportSubmission: (id) => api.get(`/support/submissions/${id}`),
+  updateSupportSubmission: (id, data) => api.patch(`/support/submissions/${id}`, data),
+  deleteSupportSubmission: (id) => api.delete(`/support/submissions/${id}`),
 };
 
 // =====================
@@ -751,6 +757,13 @@ export const statsApi = {
   getActivity: (params) => api.get('/stats/activity', params),
   getRecommendedProjects: (params) => api.get('/stats/recommended-projects', params),
   getRecommendedJobs: (params) => api.get('/stats/recommended-jobs', params),
+};
+
+// =====================
+// SUPPORT API
+// =====================
+export const supportApi = {
+  submit: (data) => api.post('/support/submit', data),
 };
 
 // =====================

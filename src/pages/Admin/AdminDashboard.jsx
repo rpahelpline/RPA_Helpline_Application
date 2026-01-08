@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { adminApi } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import { Container } from '../../components/layout/Container';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
@@ -12,9 +12,11 @@ import {
   Users, Briefcase, FolderKanban, CheckCircle, TrendingUp, Clock,
   AlertCircle, BarChart3, Settings, Shield, Edit, Trash2, Eye,
   Plus, Search, Filter, Download, Code, Zap, Crown, X, Check, Clock3,
-  GraduationCap, FileText, MessageSquare, Award, Bell, Send
+  GraduationCap, FileText, MessageSquare, Award, Bell, Send, HelpCircle
 } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/Label';
+import { Textarea } from '../../components/ui/Textarea';
 
 export const AdminDashboard = memo(() => {
   const navigate = useNavigate();
@@ -91,6 +93,7 @@ export const AdminDashboard = memo(() => {
     { id: 'analytics', label: 'Analytics', icon: TrendingUp },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'verification-requests', label: 'Verification', icon: Shield, badge: stats?.pendingVerificationRequests || 0 },
+    { id: 'support', label: 'Support', icon: HelpCircle },
     { id: 'jobs', label: 'Jobs', icon: Briefcase },
     { id: 'projects', label: 'Projects', icon: FolderKanban },
     { id: 'applications', label: 'Applications', icon: FileText },
@@ -179,6 +182,7 @@ export const AdminDashboard = memo(() => {
             {activeTab === 'analytics' && <AnalyticsTab />}
             {activeTab === 'users' && <UsersTab />}
             {activeTab === 'verification-requests' && <VerificationRequestsTab />}
+            {activeTab === 'support' && <SupportSubmissionsTab />}
             {activeTab === 'jobs' && <JobsTab />}
             {activeTab === 'projects' && <ProjectsTab />}
             {activeTab === 'applications' && <ApplicationsTab />}
@@ -1709,4 +1713,290 @@ const NotificationsTab = memo(() => {
   );
 });
 NotificationsTab.displayName = 'NotificationsTab';
+
+// Support Submissions Tab
+const SupportSubmissionsTab = memo(() => {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [status, setStatus] = useState('all');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [adminNotes, setAdminNotes] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    loadSubmissions();
+  }, [status, search, page]);
+
+  const loadSubmissions = async () => {
+    setLoading(true);
+    try {
+      const params = { page, limit: 20 };
+      if (status !== 'all') params.status = status;
+      if (search) params.search = search;
+      
+      const response = await adminApi.getSupportSubmissions(params);
+      setSubmissions(response.submissions || []);
+      setTotalPages(response.pagination?.totalPages || 1);
+    } catch (error) {
+      toast.error('Failed to load support submissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (id, newStatus) => {
+    try {
+      await adminApi.updateSupportSubmission(id, { status: newStatus });
+      toast.success('Status updated successfully');
+      loadSubmissions();
+      if (selectedSubmission?.id === id) {
+        setSelectedSubmission({ ...selectedSubmission, status: newStatus });
+      }
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleSaveNotes = async (id) => {
+    try {
+      await adminApi.updateSupportSubmission(id, { admin_notes: adminNotes });
+      toast.success('Notes saved successfully');
+      loadSubmissions();
+    } catch (error) {
+      toast.error('Failed to save notes');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this submission?')) return;
+    try {
+      await adminApi.deleteSupportSubmission(id);
+      toast.success('Submission deleted successfully');
+      loadSubmissions();
+      if (selectedSubmission?.id === id) {
+        setSelectedSubmission(null);
+      }
+    } catch (error) {
+      toast.error('Failed to delete submission');
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const variants = {
+      pending: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30',
+      in_progress: 'bg-blue-500/20 text-blue-500 border-blue-500/30',
+      resolved: 'bg-green-500/20 text-green-500 border-green-500/30',
+      closed: 'bg-gray-500/20 text-gray-500 border-gray-500/30'
+    };
+    return variants[status] || variants.pending;
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="tech-panel border-border">
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <CardTitle className="text-lg font-display">Support Submissions</CardTitle>
+              <CardDescription>Manage customer support inquiries and feedback</CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="relative max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search submissions..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <select
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(1);
+                }}
+                className="px-4 py-2 rounded-md border border-border bg-background text-foreground text-sm"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-12"><LoadingSpinner /></div>
+          ) : submissions.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No support submissions found
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                {submissions.map((submission) => (
+                  <Card
+                    key={submission.id}
+                    className={`cursor-pointer transition-all ${
+                      selectedSubmission?.id === submission.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => {
+                      setSelectedSubmission(submission);
+                      setAdminNotes(submission.admin_notes || '');
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-foreground mb-1">{submission.name}</h4>
+                          <p className="text-sm text-muted-foreground mb-2">{submission.email}</p>
+                          {submission.subject && (
+                            <p className="text-sm font-medium text-foreground mb-2">
+                              {submission.subject}
+                            </p>
+                          )}
+                        </div>
+                        <Badge className={getStatusBadge(submission.status)}>
+                          {submission.status.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                        {submission.message}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{new Date(submission.created_at).toLocaleString()}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(submission.id);
+                          }}
+                          className="h-6 text-xs"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-6">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === 1}
+                      onClick={() => setPage(p => p - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {page} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage(p => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {selectedSubmission && (
+                <Card className="tech-panel border-border">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-display">Submission Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Status</Label>
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        {['pending', 'in_progress', 'resolved', 'closed'].map((s) => (
+                          <Button
+                            key={s}
+                            variant={selectedSubmission.status === s ? 'primary' : 'outline'}
+                            size="sm"
+                            onClick={() => handleStatusUpdate(selectedSubmission.id, s)}
+                          >
+                            {s.replace('_', ' ').toUpperCase()}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Name</Label>
+                      <p className="text-foreground">{selectedSubmission.name}</p>
+                    </div>
+
+                    <div>
+                      <Label>Email</Label>
+                      <p className="text-foreground">{selectedSubmission.email}</p>
+                    </div>
+
+                    <div>
+                      <Label>Subject</Label>
+                      <p className="text-foreground">
+                        {selectedSubmission.subject || 'General Inquiry'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label>Message</Label>
+                      <p className="text-foreground whitespace-pre-wrap bg-muted/30 p-3 rounded-md">
+                        {selectedSubmission.message}
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label>Admin Notes</Label>
+                      <Textarea
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                        placeholder="Add internal notes..."
+                        rows={4}
+                        className="mt-1"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveNotes(selectedSubmission.id)}
+                        className="mt-2"
+                      >
+                        Save Notes
+                      </Button>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground space-y-1 pt-4 border-t border-border">
+                      <p>Submitted: {new Date(selectedSubmission.created_at).toLocaleString()}</p>
+                      {selectedSubmission.resolved_at && (
+                        <p>Resolved: {new Date(selectedSubmission.resolved_at).toLocaleString()}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+});
+SupportSubmissionsTab.displayName = 'SupportSubmissionsTab';
 

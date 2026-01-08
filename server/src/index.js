@@ -23,6 +23,7 @@ import uploadRoutes from './routes/upload.js';
 import otpRoutes from './routes/otp.js';
 import statsRoutes from './routes/stats.js';
 import adminRoutes from './routes/admin.js';
+import supportRoutes from './routes/support.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -219,6 +220,9 @@ app.use('/api/stats', statsRoutes);
 
 // Admin panel (requires admin authentication)
 app.use('/api/admin', adminRoutes);
+
+// Support submissions
+app.use('/api/support', supportRoutes);
 
 // Error handling for API routes (before SPA fallback, only for /api routes)
 app.use('/api', notFoundHandler);
