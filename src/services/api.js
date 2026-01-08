@@ -457,6 +457,16 @@ export const messageApi = {
 };
 
 // =====================
+// STATS API
+// =====================
+export const statsApi = {
+  getDashboardStats: () => api.get('/stats/dashboard'),
+  getActivity: (params) => api.get('/stats/activity', params),
+  getRecommendedProjects: (params) => api.get('/stats/recommended-projects', params),
+  getRecommendedJobs: (params) => api.get('/stats/recommended-jobs', params),
+};
+
+// =====================
 // HEALTH CHECK
 // =====================
 export const healthApi = {
