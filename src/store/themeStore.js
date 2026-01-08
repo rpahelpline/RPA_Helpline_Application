@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { storage } from '../mock/data';
+import { storage } from '../utils/storage';
 
 const THEME_STORAGE_KEY = 'rpa-theme-storage';
 
