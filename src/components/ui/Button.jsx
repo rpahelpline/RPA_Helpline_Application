@@ -22,7 +22,6 @@ export const Button = memo(forwardRef(({
     transform-gpu
     active:scale-[0.97]
     will-change-transform
-    inline-flex items-center justify-center
   `;
   
   const variants = {

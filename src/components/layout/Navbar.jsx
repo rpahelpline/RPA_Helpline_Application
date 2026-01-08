@@ -1,14 +1,11 @@
 import { useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Rocket, Menu, X, User, LogOut, Settings, Bell, MessageSquare } from 'lucide-react';
+import { Rocket, Menu, X, User, LogOut, Settings } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ThemeSwitcher } from '../ui/ThemeSwitcher';
 import { Container } from './Container';
-import { GlobalSearch } from '../common/GlobalSearch';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../hooks/useToast';
-import { preloadRoute } from '../../utils/preload';
-import { useNotifications } from '../../contexts/NotificationContext';
 
 export const Navbar = memo(() => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,10 +15,7 @@ export const Navbar = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user, logout } = useAuthStore();
-  const toast = useToast();
-
-  // Use centralized notification context for counts
-  const { notificationCount, messageCount } = useNotifications();
+  const { toast } = useToast();
 
   const navLinks = useMemo(() => [
     { to: '/', label: 'SERVICES' },
@@ -35,7 +29,7 @@ export const Navbar = memo(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
-
+    
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -64,7 +58,7 @@ export const Navbar = memo(() => {
   }, [logout, toast, navigate]);
 
   return (
-    <nav
+    <nav 
       className={`
         fixed top-0 left-0 right-0 z-50
         transition-all duration-300 ease-out
@@ -76,37 +70,34 @@ export const Navbar = memo(() => {
       }}
     >
       <Container>
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex items-center gap-3 group flex-shrink-0"
+          <Link 
+            to="/" 
+            className="flex items-center gap-3 group"
           >
-            <img
-              src="/logo.png"
-              alt="RPA Helpline Logo"
-              className="w-10 h-10 rounded-lg object-contain transition-transform duration-200 group-hover:scale-105"
-            />
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+              <Rocket className="h-5 w-5 text-primary-foreground" />
+            </div>
             <span className="text-lg font-display font-bold text-foreground tracking-wider transition-colors duration-200 group-hover:text-primary">
               RPA HELPLINE
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-3 flex-1 justify-center">
+          <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.to;
               return (
                 <Link
                   key={link.to}
                   to={link.to}
-                  onMouseEnter={() => preloadRoute(link.to)}
                   className={`
                     px-4 py-2 rounded-lg
-                    text-xs font-display tracking-widest whitespace-nowrap
+                    text-xs font-display tracking-widest
                     transition-all duration-200 ease-out
-                    ${isActive
-                      ? 'text-primary bg-primary/10'
+                    ${isActive 
+                      ? 'text-primary bg-primary/10' 
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     }
                   `}
@@ -115,46 +106,19 @@ export const Navbar = memo(() => {
                 </Link>
               );
             })}
-
-            {/* Search Bar - Wide and in one line */}
-            <div className="flex-1 max-w-xl mx-6">
-              <GlobalSearch />
-            </div>
           </div>
 
           {/* Right Side */}
-          <div className="hidden md:flex items-center gap-4 flex-shrink-0">
+          <div className="hidden md:flex items-center gap-3">
             <ThemeSwitcher />
             {isAuthenticated ? (
               <>
-                {/* Messages Icon with Badge */}
                 <Link
-                  to="/dashboard?section=messages"
-                  className="relative p-2 text-muted-foreground hover:text-foreground transition-colors duration-200 rounded-lg hover:bg-muted/50"
-                  title="Messages"
+                  to="/dashboard"
+                  className="text-muted-foreground hover:text-foreground font-display text-xs tracking-wider transition-colors duration-200"
                 >
-                  <MessageSquare className="h-5 w-5" />
-                  {messageCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                      {messageCount > 99 ? '99+' : messageCount}
-                    </span>
-                  )}
+                  DASHBOARD
                 </Link>
-
-                {/* Notifications Icon with Badge */}
-                <Link
-                  to="/dashboard?section=notifications"
-                  className="relative p-2 text-muted-foreground hover:text-foreground transition-colors duration-200 rounded-lg hover:bg-muted/50"
-                  title="Notifications"
-                >
-                  <Bell className="h-5 w-5" />
-                  {notificationCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-secondary text-secondary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1">
-                      {notificationCount > 99 ? '99+' : notificationCount}
-                    </span>
-                  )}
-                </Link>
-
                 <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -168,14 +132,14 @@ export const Navbar = memo(() => {
                       {user?.name || user?.email?.split('@')[0] || 'USER'}
                     </span>
                   </button>
-
+                  
                   {/* User dropdown with smooth animation */}
-                  <div
+                  <div 
                     className={`
                       absolute right-0 mt-2 w-48 tech-panel rounded-lg shadow-xl z-50 border border-border
                       transition-all duration-200 ease-out origin-top-right
-                      ${userMenuOpen
-                        ? 'opacity-100 scale-100 translate-y-0'
+                      ${userMenuOpen 
+                        ? 'opacity-100 scale-100 translate-y-0' 
                         : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
                       }
                     `}
@@ -201,15 +165,21 @@ export const Navbar = memo(() => {
                 </div>
               </>
             ) : (
-              <Link to="/sign-in">
+              <>
+                <Link to="/sign-in">
+                  <Button variant="ghost" className="text-muted-foreground hover:text-foreground font-display text-xs tracking-wider">
+                    SIGN IN
+                  </Button>
+                </Link>
                 <Button
                   variant="primary"
                   size="md"
+                  onClick={() => navigate('/register/client')}
                   className="font-display text-xs tracking-wider glow-red"
                 >
-                  GET STARTED
+                  LAUNCH MISSION
                 </Button>
-              </Link>
+              </>
             )}
           </div>
 
@@ -222,19 +192,19 @@ export const Navbar = memo(() => {
               aria-label="Toggle menu"
             >
               <div className="relative w-6 h-6">
-                <Menu
+                <Menu 
                   className={`
                     h-6 w-6 absolute inset-0
                     transition-all duration-200
                     ${mobileMenuOpen ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}
-                  `}
+                  `} 
                 />
-                <X
+                <X 
                   className={`
                     h-6 w-6 absolute inset-0
                     transition-all duration-200
                     ${mobileMenuOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'}
-                  `}
+                  `} 
                 />
               </div>
             </button>
@@ -242,7 +212,7 @@ export const Navbar = memo(() => {
         </div>
 
         {/* Mobile Navigation with smooth animation */}
-        <div
+        <div 
           className={`
             md:hidden overflow-hidden
             transition-all duration-300 ease-out
@@ -261,8 +231,8 @@ export const Navbar = memo(() => {
                       px-4 py-3 rounded-lg
                       font-display text-xs tracking-wider
                       transition-all duration-200
-                      ${isActive
-                        ? 'text-primary bg-primary/10'
+                      ${isActive 
+                        ? 'text-primary bg-primary/10' 
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                       }
                     `}
@@ -277,39 +247,9 @@ export const Navbar = memo(() => {
                   </Link>
                 );
               })}
-
+              
               {isAuthenticated ? (
                 <>
-                  <Link
-                    to="/dashboard?section=messages"
-                    className="px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors duration-200 font-display text-xs tracking-wider flex items-center justify-between"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <span className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      MESSAGES
-                    </span>
-                    {messageCount > 0 && (
-                      <span className="min-w-[20px] h-[20px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1.5">
-                        {messageCount > 99 ? '99+' : messageCount}
-                      </span>
-                    )}
-                  </Link>
-                  <Link
-                    to="/dashboard?section=notifications"
-                    className="px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors duration-200 font-display text-xs tracking-wider flex items-center justify-between"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <span className="flex items-center gap-2">
-                      <Bell className="h-4 w-4" />
-                      NOTIFICATIONS
-                    </span>
-                    {notificationCount > 0 && (
-                      <span className="min-w-[20px] h-[20px] bg-secondary text-secondary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1.5">
-                        {notificationCount > 99 ? '99+' : notificationCount}
-                      </span>
-                    )}
-                  </Link>
                   <Link
                     to="/dashboard"
                     className="px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors duration-200 font-display text-xs tracking-wider"

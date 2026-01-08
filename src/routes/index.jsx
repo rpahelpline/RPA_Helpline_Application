@@ -2,15 +2,13 @@ import { lazy, Suspense, memo } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
-import { AdminProtectedRoute } from '../components/common/AdminProtectedRoute';
-import { RoleProtectedRoute } from '../components/common/RoleProtectedRoute';
 import { PageLoader } from '../components/common/LoadingSpinner';
 import { PageTransition } from '../components/common/PageTransition';
 import { ScrollToTop } from '../components/common/SmoothScroll';
 
 // Helper function to lazy load named exports with preload support
 const lazyLoad = (importFunc, exportName) => {
-  const Component = lazy(() =>
+  const Component = lazy(() => 
     importFunc().then(module => {
       const component = module[exportName];
       if (!component) {
@@ -25,7 +23,7 @@ const lazyLoad = (importFunc, exportName) => {
       throw error;
     })
   );
-
+  
   // Add preload method for performance
   Component.preload = importFunc;
   return Component;
@@ -34,7 +32,6 @@ const lazyLoad = (importFunc, exportName) => {
 // Lazy load all pages for better performance
 const Home = lazyLoad(() => import('../pages/Home'), 'Home');
 const SignIn = lazyLoad(() => import('../pages/SignIn'), 'SignIn');
-const ForgotPassword = lazyLoad(() => import('../pages/ForgotPassword'), 'ForgotPassword');
 const Projects = lazyLoad(() => import('../pages/Projects'), 'Projects');
 const ProjectDetail = lazyLoad(() => import('../pages/ProjectDetail'), 'ProjectDetail');
 const HowItWorks = lazyLoad(() => import('../pages/HowItWorks'), 'HowItWorks');
@@ -46,32 +43,13 @@ const RegisterDeveloper = lazyLoad(() => import('../pages/Register/RegisterDevel
 const RegisterTrainer = lazyLoad(() => import('../pages/Register/RegisterTrainer'), 'RegisterTrainer');
 const RegisterJobSeeker = lazyLoad(() => import('../pages/Register/RegisterJobSeeker'), 'RegisterJobSeeker');
 const RegisterProject = lazyLoad(() => import('../pages/Register/RegisterProject'), 'RegisterProject');
-const PublicProfile = lazyLoad(() => import('../pages/Profile/PublicProfile'), 'PublicProfile');
 const Jobs = lazyLoad(() => import('../pages/Jobs'), 'Jobs');
-const JobDetail = lazyLoad(() => import('../pages/Jobs/JobDetail'), 'JobDetail');
 const NotFound = lazyLoad(() => import('../pages/NotFound'), 'NotFound');
-const TermsAndConditions = lazy(() => import('../pages/TermsAndConditions'));
 const GitHubCallback = lazyLoad(() => import('../pages/Auth/GitHubCallback'), 'GitHubCallback');
-const BrowseTalent = lazyLoad(() => import('../pages/Talent/BrowseTalent'), 'BrowseTalent');
-const PostJob = lazyLoad(() => import('../pages/Jobs/PostJob'), 'PostJob');
-const MyApplications = lazyLoad(() => import('../pages/Applications/MyApplications'), 'MyApplications');
-const Messages = lazyLoad(() => import('../pages/Messages'), 'Messages');
-const Notifications = lazyLoad(() => import('../pages/Notifications'), 'Notifications');
-const SearchPage = lazyLoad(() => import('../pages/Search'), 'SearchPage');
-const AdminDashboard = lazyLoad(() => import('../pages/Admin/AdminDashboard'), 'AdminDashboard');
-const Support = lazyLoad(() => import('../pages/Support'), 'Support');
-
-// Training/Courses pages
-const Courses = lazyLoad(() => import('../pages/Training/Courses'), 'Courses');
-const CourseDetail = lazyLoad(() => import('../pages/Training/CourseDetail'), 'CourseDetail');
-const CreateCourse = lazyLoad(() => import('../pages/Training/CreateCourse'), 'CreateCourse');
-const EditCourse = lazyLoad(() => import('../pages/Training/EditCourse'), 'EditCourse');
-const ProfileSetup = lazyLoad(() => import('../pages/ProfileSetup'), 'ProfileSetup');
-const ProfileSetupEnhanced = lazyLoad(() => import('../pages/ProfileSetupEnhanced'), 'ProfileSetupEnhanced');
 
 // Smooth loading fallback
 const SmoothLoader = memo(() => (
-  <div
+  <div 
     className="min-h-screen flex items-center justify-center bg-background"
     style={{
       animation: 'fadeIn 0.3s ease-out',
@@ -95,7 +73,7 @@ const RouteWrapper = memo(({ children, withLayout = true }) => {
       </MainLayout>
     );
   }
-
+  
   return (
     <PageTransition>
       <Suspense fallback={<SmoothLoader />}>
@@ -108,7 +86,7 @@ RouteWrapper.displayName = 'RouteWrapper';
 
 export const AppRoutes = () => {
   const location = useLocation();
-
+  
   return (
     <>
       <ScrollToTop />
@@ -117,70 +95,20 @@ export const AppRoutes = () => {
           {/* Public Routes */}
           <Route path="/" element={<RouteWrapper><Home /></RouteWrapper>} />
           <Route path="/sign-in" element={<RouteWrapper><SignIn /></RouteWrapper>} />
-          <Route path="/forgot-password" element={<RouteWrapper><ForgotPassword /></RouteWrapper>} />
-          <Route path="/terms" element={<RouteWrapper><TermsAndConditions /></RouteWrapper>} />
           <Route path="/projects" element={<RouteWrapper><Projects /></RouteWrapper>} />
           <Route path="/projects/:id" element={<RouteWrapper><ProjectDetail /></RouteWrapper>} />
           <Route path="/jobs" element={<RouteWrapper><Jobs /></RouteWrapper>} />
-          <Route path="/jobs/:id" element={<RouteWrapper><JobDetail /></RouteWrapper>} />
-          <Route path="/profile/:userId" element={<RouteWrapper><PublicProfile /></RouteWrapper>} />
-          <Route
-            path="/talent"
-            element={
-              <RoleProtectedRoute
-                allowedRoles={['client', 'employer']}
-                redirectTo="/dashboard"
-                errorMessage="Only hiring members can browse talent. Switch to a hiring role to access this feature."
-              >
-                <RouteWrapper>
-                  <BrowseTalent />
-                </RouteWrapper>
-              </RoleProtectedRoute>
-            }
-          />
-          <Route path="/search" element={<RouteWrapper><SearchPage /></RouteWrapper>} />
-          <Route path="/courses" element={<RouteWrapper><Courses /></RouteWrapper>} />
-          <Route path="/courses/:id" element={<RouteWrapper><CourseDetail /></RouteWrapper>} />
-          <Route
-            path="/create-course"
-            element={
-              <RoleProtectedRoute
-                allowedRoles={['trainer']}
-                redirectTo="/courses"
-                errorMessage="Only trainers can create courses."
-              >
-                <RouteWrapper>
-                  <CreateCourse />
-                </RouteWrapper>
-              </RoleProtectedRoute>
-            }
-          />
-          <Route
-            path="/courses/:id/edit"
-            element={
-              <RoleProtectedRoute
-                allowedRoles={['trainer']}
-                redirectTo="/courses"
-                errorMessage="Only trainers can edit courses."
-              >
-                <RouteWrapper>
-                  <EditCourse />
-                </RouteWrapper>
-              </RoleProtectedRoute>
-            }
-          />
           <Route path="/how-it-works" element={<RouteWrapper><HowItWorks /></RouteWrapper>} />
-          <Route path="/support" element={<RouteWrapper><Support /></RouteWrapper>} />
           <Route path="/register" element={<RouteWrapper><Register /></RouteWrapper>} />
           <Route path="/register/client" element={<RouteWrapper><RegisterClient /></RouteWrapper>} />
           <Route path="/register/freelancer" element={<RouteWrapper><RegisterFreelancer /></RouteWrapper>} />
           <Route path="/register/developer" element={<RouteWrapper><RegisterDeveloper /></RouteWrapper>} />
           <Route path="/register/trainer" element={<RouteWrapper><RegisterTrainer /></RouteWrapper>} />
-          <Route path="/register/job-seeker" element={<RouteWrapper><RegisterJobSeeker /></RouteWrapper>} />
-
+          <Route path="/register/jobseeker" element={<RouteWrapper><RegisterJobSeeker /></RouteWrapper>} />
+          
           {/* OAuth Callbacks */}
           <Route path="/auth/github/callback" element={<RouteWrapper withLayout={false}><GitHubCallback /></RouteWrapper>} />
-
+          
           {/* Protected Routes */}
           <Route
             path="/dashboard"
@@ -193,84 +121,16 @@ export const AppRoutes = () => {
             }
           />
           <Route
-            path="/profile-setup"
-            element={
-              <ProtectedRoute>
-                <RouteWrapper>
-                  <ProfileSetupEnhanced />
-                </RouteWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <AdminProtectedRoute>
-                <RouteWrapper withLayout={false}>
-                  <AdminDashboard />
-                </RouteWrapper>
-              </AdminProtectedRoute>
-            }
-          />
-          <Route
             path="/register/project"
             element={
-              <RoleProtectedRoute
-                allowedRoles={['client', 'employer', 'ba_pm']}
-                redirectTo="/projects"
-                errorMessage="Only clients, employers, and BA/PMs can post projects. Switch to a hiring role to post."
-              >
+              <ProtectedRoute allowedRoles={['client']}>
                 <RouteWrapper>
                   <RegisterProject />
                 </RouteWrapper>
-              </RoleProtectedRoute>
-            }
-          />
-          <Route
-            path="/post-job"
-            element={
-              <RoleProtectedRoute
-                allowedRoles={['employer', 'client', 'ba_pm']}
-                redirectTo="/jobs"
-                errorMessage="Only employers, clients, and BA/PMs can post jobs. Switch to a hiring role to post."
-              >
-                <RouteWrapper>
-                  <PostJob />
-                </RouteWrapper>
-              </RoleProtectedRoute>
-            }
-          />
-          <Route
-            path="/applications"
-            element={
-              <ProtectedRoute>
-                <RouteWrapper>
-                  <MyApplications />
-                </RouteWrapper>
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/messages"
-            element={
-              <ProtectedRoute>
-                <RouteWrapper withLayout={false}>
-                  <Messages />
-                </RouteWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <RouteWrapper>
-                  <Notifications />
-                </RouteWrapper>
-              </ProtectedRoute>
-            }
-          />
-
+          
           {/* 404 */}
           <Route path="*" element={<RouteWrapper><NotFound /></RouteWrapper>} />
         </Routes>

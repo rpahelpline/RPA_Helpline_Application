@@ -86,7 +86,7 @@ export const RegisterDeveloper = memo(() => {
       if (result.success) {
         setRole('ba_pm');
         toast.success('Account created successfully!');
-        navigate('/profile-setup');
+        navigate('/dashboard');
       } else {
         // Handle rate limiting
         if (result.status === 429) {

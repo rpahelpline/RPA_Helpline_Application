@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { storage } from '../utils/storage';
+import { storage } from '../mock/data';
 
 const THEME_STORAGE_KEY = 'rpa-theme-storage';
 
@@ -10,10 +10,13 @@ const getInitialTheme = () => {
     if (saved?.theme) {
       return saved.theme;
     }
-    // Default to light theme
-    return 'light';
+    // Check system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      return 'light';
+    }
+    return 'dark';
   } catch {
-    return 'light';
+    return 'dark';
   }
 };
 

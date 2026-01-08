@@ -5,7 +5,7 @@ export const Footer = () => {
   return (
     <footer className="tech-panel mt-auto border-t border-border">
       <Container>
-        <div className="py-8 md:py-12 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="py-8 md:py-12 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
@@ -15,14 +15,14 @@ export const Footer = () => {
             <span className="text-base md:text-lg font-display font-bold text-foreground tracking-wider">RPA HELPLINE</span>
           </div>
           <div className="text-center md:text-left">
-            <p className="text-xs font-mono text-muted-foreground mb-2">EMAIL</p>
-            <a href="mailto:contact@rpahelpline.com" className="text-sm text-white hover:text-white/80 transition-colors">
+            <p className="text-xs font-mono text-muted-foreground mb-2">COMMUNICATION CHANNEL</p>
+            <a href="mailto:contact@rpahelpline.com" className="text-sm text-secondary hover:text-secondary/80 transition-colors">
               contact@rpahelpline.com
             </a>
           </div>
           <div className="text-center md:text-right">
-            <p className="text-xs font-mono text-muted-foreground mb-2">PHONE</p>
-            <a href="tel:+919490030441" className="text-sm text-white hover:text-white/80 transition-colors">
+            <p className="text-xs font-mono text-muted-foreground mb-2">DIRECT LINE</p>
+            <a href="tel:+919490030441" className="text-sm text-secondary hover:text-secondary/80 transition-colors">
               +91 9490030441
             </a>
           </div>

@@ -38,7 +38,7 @@ export const RegisterClient = memo(() => {
       if (result.success) {
         setRole('client');
         toast.success('Account created successfully!');
-        navigate('/profile-setup');
+        navigate('/dashboard');
       } else {
         // Handle rate limiting
         if (result.status === 429) {

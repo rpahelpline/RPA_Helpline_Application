@@ -51,7 +51,7 @@ export const RegisterJobSeeker = memo(() => {
       if (result.success) {
         setRole('job_seeker');
         toast.success('Account created successfully!');
-        navigate('/profile-setup');
+        navigate('/dashboard');
       } else {
         // Handle rate limiting
         if (result.status === 429) {

@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -20,10 +19,6 @@ import taxonomyRoutes from './routes/taxonomy.js';
 import notificationRoutes from './routes/notifications.js';
 import messageRoutes from './routes/messages.js';
 import uploadRoutes from './routes/upload.js';
-import otpRoutes from './routes/otp.js';
-import statsRoutes from './routes/stats.js';
-import adminRoutes from './routes/admin.js';
-import supportRoutes from './routes/support.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -36,11 +31,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Trust proxy - Required when behind a reverse proxy (like Render, Heroku, etc.)
-// This allows Express to correctly identify the client's IP address
-// Set to 1 to only trust the first proxy hop (more secure for rate limiting)
-app.set('trust proxy', 1);
 
 // Security middleware
 // In production, adjust helmet for serving static files
@@ -79,24 +69,10 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Length', 'Content-Type'],
-  maxAge: 86400 // 24 hours
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
-
-// Response compression - reduces payload size by 30-50%
-app.use(compression({
-  level: 6, // Balanced compression level
-  threshold: 1024, // Only compress responses > 1KB
-  filter: (req, res) => {
-    // Don't compress if client doesn't want it
-    if (req.headers['x-no-compression']) return false;
-    // Use compression filter defaults
-    return compression.filter(req, res);
-  }
-}));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -126,14 +102,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Static files for uploads
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!existsSync(uploadsDir)) {
-  mkdirSync(uploadsDir, { recursive: true });
-  console.log(`[Uploads] Created uploads directory at: ${uploadsDir}`);
-}
-app.use('/uploads', express.static(uploadsDir));
-console.log(`[Uploads] Serving static files from: ${uploadsDir}`);
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Serve frontend static files in production (from root dist folder)
 // This must come before API routes so static assets are served first
@@ -150,24 +119,7 @@ if (process.env.NODE_ENV === 'production') {
   }
   
   // Serve static assets (CSS, JS, images, etc.)
-  // Set proper headers for static files including images
-  app.use(express.static(distPath, { 
-    index: false,
-    setHeaders: (res, filePath) => {
-      // Set CORS headers for static assets
-      res.set('Access-Control-Allow-Origin', '*');
-      
-      // Set cache headers for images
-      if (filePath.endsWith('.png') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.svg') || filePath.endsWith('.gif') || filePath.endsWith('.webp')) {
-        res.set('Cache-Control', 'public, max-age=31536000, immutable');
-        res.set('Content-Type', filePath.endsWith('.svg') ? 'image/svg+xml' : 
-                              filePath.endsWith('.png') ? 'image/png' :
-                              filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') ? 'image/jpeg' :
-                              filePath.endsWith('.gif') ? 'image/gif' :
-                              filePath.endsWith('.webp') ? 'image/webp' : 'image/png');
-      }
-    }
-  }));
+  app.use(express.static(distPath, { index: false }));
 }
 
 // Health check endpoint
@@ -214,16 +166,6 @@ app.use('/api/messages', messageRoutes);
 // File uploads
 app.use('/api/upload', uploadRoutes);
 
-// OTP verification
-app.use('/api/otp', otpRoutes);
-app.use('/api/stats', statsRoutes);
-
-// Admin panel (requires admin authentication)
-app.use('/api/admin', adminRoutes);
-
-// Support submissions
-app.use('/api/support', supportRoutes);
-
 // Error handling for API routes (before SPA fallback, only for /api routes)
 app.use('/api', notFoundHandler);
 app.use('/api', errorHandler);
@@ -241,15 +183,9 @@ if (process.env.NODE_ENV === 'production') {
   
   // Handle ALL non-API routes with index.html for SPA routing
   // This must be the last route handler
-  // Handle all HTTP methods for SPA routing (GET, POST for form submissions, etc.)
-  app.all('*', (req, res, next) => {
+  app.get('*', (req, res) => {
     // Double-check: skip API routes (should already be handled, but just in case)
     if (req.path.startsWith('/api')) {
-      return res.status(404).json({ error: 'Not Found', message: `Cannot ${req.method} ${req.originalUrl}` });
-    }
-    
-    // Only handle GET requests for SPA routing (POST/PUT/DELETE should go to API)
-    if (req.method !== 'GET') {
       return res.status(404).json({ error: 'Not Found', message: `Cannot ${req.method} ${req.originalUrl}` });
     }
     
@@ -274,13 +210,7 @@ if (process.env.NODE_ENV === 'production') {
     
     console.log(`[Frontend] Serving index.html for route: ${req.path}`);
     
-    // Set proper headers for HTML content
-    res.set('Content-Type', 'text/html; charset=utf-8');
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-    
-    // Send index.html for all GET requests (SPA routing)
+    // Send index.html for all other GET requests (SPA routing)
     res.sendFile(indexPath, (err) => {
       if (err) {
         console.error(`[Frontend] Error serving index.html for ${req.path}:`, err.message);

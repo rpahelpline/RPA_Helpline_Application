@@ -157,7 +157,7 @@ export const ForgotPassword = memo(() => {
         }
 
         toast.success('Account created successfully! You have been logged in.');
-        navigate('/profile-setup');
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Profile creation error:', error);

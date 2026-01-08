@@ -345,7 +345,7 @@ export const Register = memo(() => {
       if (result.success) {
         setRole(userRole);
         toast.success('Account created successfully!');
-        navigate('/profile-setup');
+        navigate('/dashboard');
       } else {
         // Handle account exists - show recovery flow
         if (result.code === 'ACCOUNT_EXISTS') {
@@ -421,7 +421,7 @@ export const Register = memo(() => {
         toast.success('Signed up with Google successfully!');
 
         setTimeout(() => {
-          navigate('/profile-setup');
+          navigate('/dashboard');
         }, 1000);
       } else {
         if (!result.cancelled) {

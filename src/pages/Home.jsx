@@ -1,10 +1,9 @@
 import { memo, useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/Button";
-import { useAuthStore } from "../store/authStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card";
-import {
-  Users, Briefcase, Code, ArrowRight, CheckCircle, MessageSquare,
+import { 
+  Users, Briefcase, Code, ArrowRight, CheckCircle, MessageSquare, 
   Cpu, Target, Activity, Rocket, Search, Shield, Zap, Award,
   Globe, TrendingUp, Clock, Star, ChevronDown, Play, Sparkles,
   GraduationCap, Building2, UserCheck, Layers, Terminal, Database,
@@ -46,10 +45,10 @@ const AnimatedCounter = memo(({ end, duration = 2000, suffix = "", prefix = "" }
     const animate = (currentTime) => {
       if (!startTime) startTime = currentTime;
       const progress = Math.min((currentTime - startTime) / duration, 1);
-
+      
       const easeOutQuart = 1 - Math.pow(1 - progress, 4);
       const currentValue = startValue + (endValue - startValue) * easeOutQuart;
-
+      
       setCount(currentValue);
 
       if (progress < 1) {
@@ -60,8 +59,8 @@ const AnimatedCounter = memo(({ end, duration = 2000, suffix = "", prefix = "" }
     requestAnimationFrame(animate);
   }, [end, duration, isVisible]);
 
-  const displayValue = typeof end === 'string' && end.includes('.')
-    ? count.toFixed(1)
+  const displayValue = typeof end === 'string' && end.includes('.') 
+    ? count.toFixed(1) 
     : Math.floor(count);
 
   return (
@@ -76,7 +75,7 @@ AnimatedCounter.displayName = 'AnimatedCounter';
 // FLOATING PARTICLES COMPONENT
 // ============================================================================
 const FloatingParticles = memo(() => {
-  const particles = useMemo(() =>
+  const particles = useMemo(() => 
     Array.from({ length: 50 }, (_, i) => ({
       id: i,
       size: Math.random() * 3 + 1,
@@ -176,10 +175,11 @@ const ScrollReveal = memo(({ children, className = "", delay = 0 }) => {
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ease-out ${isVisible
-        ? 'opacity-100 translate-y-0'
-        : 'opacity-0 translate-y-8'
-        } ${className}`}
+      className={`transition-all duration-700 ease-out ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-8'
+      } ${className}`}
     >
       {children}
     </div>
@@ -217,8 +217,8 @@ const ServiceCard = memo(({ service, index }) => (
           ))}
         </ul>
         <div className="mt-6 pt-4 border-t border-border/50">
-          <Link
-            to={service.link}
+          <Link 
+            to={service.link} 
             className="inline-flex items-center gap-2 text-sm font-display text-primary hover:text-primary/80 transition-colors group/link"
           >
             <span>EXPLORE MODULE</span>
@@ -268,10 +268,11 @@ const JobCard = memo(({ job, index }) => (
               {job.company}
             </CardDescription>
           </div>
-          <span className={`text-[10px] font-mono px-3 py-1.5 rounded-full font-bold ${job.priority === 'CRITICAL' ? 'bg-primary/20 text-primary border border-primary/30' :
+          <span className={`text-[10px] font-mono px-3 py-1.5 rounded-full font-bold ${
+            job.priority === 'CRITICAL' ? 'bg-primary/20 text-primary border border-primary/30' :
             job.priority === 'HIGH' ? 'bg-accent/20 text-accent border border-accent/30' :
-              'bg-secondary/20 text-secondary border border-secondary/30'
-            }`}>
+            'bg-secondary/20 text-secondary border border-secondary/30'
+          }`}>
             {job.priority}
           </span>
         </div>
@@ -287,8 +288,8 @@ const JobCard = memo(({ job, index }) => (
           </div>
           <div className="flex items-center justify-between pt-3 border-t border-border/50">
             <span className="text-xs font-mono text-muted-foreground bg-card px-2 py-1 rounded">{job.type}</span>
-            <Link
-              to="/jobs"
+            <Link 
+              to="/jobs" 
               className="text-xs font-display text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
             >
               VIEW DETAILS
@@ -310,20 +311,20 @@ const UserTypeCard = memo(({ type, index }) => (
     <Link to={type.link}>
       <div className="group relative tech-panel-strong rounded-xl p-8 hover-lift cursor-pointer border-glow-red overflow-hidden h-full transition-all duration-300">
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
-
+        
         <div className="relative">
           <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-6 transition-all duration-300 ${type.bgColor} group-hover:scale-110`}>
             <type.icon className={`w-8 h-8 ${type.iconColor}`} />
           </div>
-
+          
           <h3 className="text-xl font-display font-bold text-foreground mb-2 tracking-wider group-hover:text-primary transition-colors">
             {type.title}
           </h3>
-
+          
           <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
             {type.description}
           </p>
-
+          
           <div className="space-y-2 mb-6">
             {type.benefits.map((benefit, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
@@ -332,7 +333,7 @@ const UserTypeCard = memo(({ type, index }) => (
               </div>
             ))}
           </div>
-
+          
           <div className="flex items-center gap-2 text-primary font-display text-sm group-hover:gap-3 transition-all">
             <span>GET STARTED</span>
             <ArrowRight className="w-4 h-4" />
@@ -349,7 +350,6 @@ UserTypeCard.displayName = 'UserTypeCard';
 // ============================================================================
 export const Home = memo(() => {
   const navigate = useNavigate();
-  const { isAuthenticated, role } = useAuthStore();
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -367,8 +367,8 @@ export const Home = memo(() => {
 
   // Memoized static data
   const statsData = useMemo(() => [
-    { value: "44", label: "ACTIVE SPECIALISTS", suffix: "+", icon: Users },
-    { value: "22", label: "PROJECTS COMPLETED", suffix: "+", icon: Briefcase },
+    { value: "500", label: "ACTIVE SPECIALISTS", suffix: "+", icon: Users },
+    { value: "1200", label: "PROJECTS COMPLETED", suffix: "+", icon: Briefcase },
     { value: "99.8", label: "SUCCESS RATE", suffix: "%", icon: TrendingUp },
     { value: "24", label: "HOUR RESPONSE", suffix: "H", icon: Clock },
   ], []);
@@ -382,34 +382,34 @@ export const Home = memo(() => {
   ], []);
 
   const servicesData = useMemo(() => [
-    {
-      icon: MessageSquare,
-      title: "RPA CONSULTATION",
-      code: "CON-01",
+    { 
+      icon: MessageSquare, 
+      title: "RPA CONSULTATION", 
+      code: "CON-01", 
       desc: "Connect with certified RPA experts for consultation, troubleshooting, and strategic automation guidance.",
       features: ["Expert consultations", "Rapid diagnostics", "Architecture review", "Best practices"],
       link: "/register/freelancer"
     },
-    {
-      icon: Users,
-      title: "HIRE TALENT",
-      code: "HIR-02",
+    { 
+      icon: Users, 
+      title: "HIRE TALENT", 
+      code: "HIR-02", 
       desc: "Access a global network of verified automation specialists ready for immediate deployment.",
       features: ["Verified profiles", "Skill assessments", "Flexible engagement", "Fast matching"],
       link: "/register/client"
     },
-    {
-      icon: Briefcase,
-      title: "FIND JOBS",
-      code: "JOB-03",
+    { 
+      icon: Briefcase, 
+      title: "FIND JOBS", 
+      code: "JOB-03", 
       desc: "Discover exciting career opportunities in robotic process automation across leading organizations.",
       features: ["Remote positions", "Competitive pay", "Top companies", "Career growth"],
       link: "/register/job-seeker"
     },
-    {
-      icon: GraduationCap,
-      title: "RPA TRAINING",
-      code: "TRN-04",
+    { 
+      icon: GraduationCap, 
+      title: "RPA TRAINING", 
+      code: "TRN-04", 
       desc: "Master RPA platforms with expert-led training programs and hands-on certification courses.",
       features: ["Certified courses", "Hands-on labs", "Expert instructors", "Career support"],
       link: "/register/trainer"
@@ -505,23 +505,23 @@ export const Home = memo(() => {
   ], []);
 
   const phasesData = useMemo(() => [
-    {
-      phase: "PHASE 01",
-      title: "DISCOVERY",
+    { 
+      phase: "PHASE 01", 
+      title: "DISCOVERY", 
       desc: "Process analysis and automation opportunity assessment to maximize ROI and mission success.",
       icon: Search,
       features: ["Process mapping", "ROI analysis", "Risk assessment"]
     },
-    {
-      phase: "PHASE 02",
-      title: "DEVELOPMENT",
+    { 
+      phase: "PHASE 02", 
+      title: "DEVELOPMENT", 
       desc: "Certified specialists build robust automation systems with comprehensive testing protocols.",
       icon: Cpu,
       features: ["Bot development", "Integration", "Testing"]
     },
-    {
-      phase: "PHASE 03",
-      title: "DEPLOYMENT",
+    { 
+      phase: "PHASE 03", 
+      title: "DEPLOYMENT", 
       desc: "Seamless go-live execution with training, documentation, and ongoing support.",
       icon: Rocket,
       features: ["Training", "Go-live support", "Optimization"]
@@ -538,19 +538,19 @@ export const Home = memo(() => {
   return (
     <div className="relative overflow-hidden">
       <FloatingParticles />
-
+      
       {/* ================================================================== */}
       {/* HERO SECTION */}
       {/* ================================================================== */}
-      <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center pt-16 md:pt-20 pb-12 md:pb-16 px-4 md:px-6">
+      <section className="relative min-h-[90vh] flex items-center justify-center pt-20 pb-16 px-6">
         {/* Animated background gradient */}
-        <div
+        <div 
           className="absolute inset-0 opacity-30"
           style={{
             background: `radial-gradient(ellipse at 50% ${50 + scrollY * 0.02}%, hsl(var(--primary) / 0.15) 0%, transparent 50%)`,
           }}
         />
-
+        
         <div className="container mx-auto relative z-10">
           <div className="max-w-6xl mx-auto">
             <ScrollReveal>
@@ -563,193 +563,59 @@ export const Home = memo(() => {
                   </span>
                   <span className="text-xs font-mono text-secondary uppercase tracking-wider">System Status: All Systems Operational</span>
                 </div>
-
+                
                 {/* Main Heading */}
-                <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-display font-bold mb-4 md:mb-6 leading-tight tracking-wider">
+                <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-6 leading-none tracking-wider">
                   <span className="text-foreground block mb-2">YOUR COMMAND CENTER FOR</span>
                   <span className="text-primary bg-gradient-to-r from-primary via-primary to-accent bg-clip-text">
                     RPA EXCELLENCE
                   </span>
                 </h1>
-
+                
                 {/* Hero Headline */}
-                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-display font-bold mb-4 md:mb-6 text-secondary">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold mb-6 text-secondary">
                   Hire RPA developer in <span className="text-primary font-black">30 mins</span>
                 </h2>
-
+                
                 {/* Typing Animation */}
-                <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground mb-3 md:mb-4 min-h-[2rem] md:min-h-[2.5rem] flex items-center justify-center flex-wrap gap-1">
+                <div className="text-xl md:text-2xl text-muted-foreground mb-4 h-10 flex items-center justify-center">
                   <span className="mr-2">Find World-Class</span>
-                  <TypingText
-                    texts={heroTexts}
+                  <TypingText 
+                    texts={heroTexts} 
                     className="text-secondary font-display font-bold"
                   />
                 </div>
-
-                <p className="text-sm sm:text-base md:text-lg text-muted-foreground mb-8 md:mb-12 max-w-3xl mx-auto leading-relaxed px-2">
-                  The premier platform connecting businesses with elite RPA talent.
-                  Whether you&apos;re looking to hire specialists, find your next opportunity,
+                
+                <p className="text-lg text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
+                  The premier platform connecting businesses with elite RPA talent. 
+                  Whether you&apos;re looking to hire specialists, find your next opportunity, 
                   or scale your automation expertise—your mission starts here.
                 </p>
-
-                {/* CTA Buttons - Role-based */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-8 md:mb-12 w-full px-2">
-                  {isAuthenticated ? (
-                    <>
-                      {(role === 'client' || role === 'employer') ? (
-                        <>
-                          <Button
-                            size="lg"
-                            onClick={() => navigate(role === 'employer' ? '/post-job' : '/register/project')}
-                            className="bg-primary hover:bg-primary/90 text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider glow-red group w-full sm:w-auto"
-                          >
-                            <Rocket className="mr-2 h-5 w-5" />
-                            {role === 'employer' ? 'POST A JOB' : 'POST A PROJECT'}
-                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                          </Button>
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={() => navigate('/talent')}
-                            className="text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary w-full sm:w-auto"
-                          >
-                            <Users className="mr-2 h-5 w-5" />
-                            FIND TALENT
-                          </Button>
-                        </>
-                      ) : role === 'job_seeker' ? (
-                        <>
-                          <Button
-                            size="lg"
-                            onClick={() => navigate('/jobs')}
-                            className="bg-primary hover:bg-primary/90 text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider glow-red group w-full sm:w-auto"
-                          >
-                            <Briefcase className="mr-2 h-5 w-5" />
-                            BROWSE JOBS
-                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                          </Button>
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={() => navigate('/dashboard?section=profile')}
-                            className="text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary w-full sm:w-auto"
-                          >
-                            <UserCheck className="mr-2 h-5 w-5" />
-                            CREATE PROFILE
-                          </Button>
-                        </>
-                      ) : role === 'freelancer' ? (
-                        <>
-                          <Button
-                            size="lg"
-                            onClick={() => navigate('/projects')}
-                            className="bg-primary hover:bg-primary/90 text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider glow-red group w-full sm:w-auto"
-                          >
-                            <Briefcase className="mr-2 h-5 w-5" />
-                            BROWSE PROJECTS
-                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                          </Button>
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={() => navigate('/dashboard?section=portfolio')}
-                            className="text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary w-full sm:w-auto"
-                          >
-                            <Briefcase className="mr-2 h-5 w-5" />
-                            CREATE PORTFOLIO
-                          </Button>
-                        </>
-                      ) : role === 'trainer' ? (
-                        <>
-                          <Button
-                            size="lg"
-                            onClick={() => navigate('/dashboard?section=courses')}
-                            className="bg-primary hover:bg-primary/90 text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider glow-red group w-full sm:w-auto"
-                          >
-                            <GraduationCap className="mr-2 h-5 w-5" />
-                            CREATE COURSE
-                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                          </Button>
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={() => navigate('/dashboard?section=students')}
-                            className="text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary w-full sm:w-auto"
-                          >
-                            <Users className="mr-2 h-5 w-5" />
-                            VIEW STUDENTS
-                          </Button>
-                        </>
-                      ) : (role === 'ba_pm' || role === 'developer') ? (
-                        <>
-                          <Button
-                            size="lg"
-                            onClick={() => navigate('/projects')}
-                            className="bg-primary hover:bg-primary/90 text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider glow-red group w-full sm:w-auto"
-                          >
-                            <Briefcase className="mr-2 h-5 w-5" />
-                            BROWSE PROJECTS
-                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                          </Button>
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={() => navigate('/dashboard?section=analytics')}
-                            className="text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary w-full sm:w-auto"
-                          >
-                            <Activity className="mr-2 h-5 w-5" />
-                            VIEW ANALYTICS
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            size="lg"
-                            onClick={() => navigate('/register')}
-                            className="bg-primary hover:bg-primary/90 text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider glow-red group w-full sm:w-auto"
-                          >
-                            <Rocket className="mr-2 h-5 w-5" />
-                            START YOUR MISSION
-                            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                          </Button>
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={() => navigate('/sign-in')}
-                            className="text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary w-full sm:w-auto"
-                          >
-                            <Play className="mr-2 h-5 w-5" />
-                            EXPLORE PLATFORM
-                          </Button>
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        size="lg"
-                        onClick={() => navigate('/register')}
-                        className="bg-primary hover:bg-primary/90 text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider glow-red group w-full sm:w-auto"
-                      >
-                        <Rocket className="mr-2 h-5 w-5" />
-                        START YOUR MISSION
-                        <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                      </Button>
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        onClick={() => navigate('/sign-in')}
-                        className="text-xs sm:text-sm px-6 sm:px-8 md:px-10 py-5 sm:py-6 md:py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary w-full sm:w-auto"
-                      >
-                        <Play className="mr-2 h-5 w-5" />
-                        EXPLORE PLATFORM
-                      </Button>
-                    </>
-                  )}
+                
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+                  <Button 
+                    size="lg" 
+                    onClick={() => navigate('/register')}
+                    className="bg-primary hover:bg-primary/90 text-sm px-10 py-7 font-display tracking-wider glow-red group text-lg"
+                  >
+                    <Rocket className="mr-2 h-5 w-5" />
+                    START YOUR MISSION
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    onClick={() => navigate('/sign-in')}
+                    className="text-sm px-10 py-7 font-display tracking-wider border-secondary/50 text-secondary hover:bg-secondary/10 hover:border-secondary text-lg"
+                  >
+                    <Play className="mr-2 h-5 w-5" />
+                    EXPLORE PLATFORM
+                  </Button>
                 </div>
 
                 {/* Scroll indicator */}
-                <button
+                <button 
                   onClick={() => handleScrollToSection('stats')}
                   className="animate-bounce text-muted-foreground hover:text-secondary transition-colors"
                 >
@@ -761,42 +627,31 @@ export const Home = memo(() => {
         </div>
       </section>
 
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
       {/* ================================================================== */}
       {/* STATS SECTION */}
       {/* ================================================================== */}
-      <section id="stats" className="py-8 md:py-12 px-4 md:px-6 relative">
+      <section id="stats" className="py-20 px-6 relative">
         <div className="container mx-auto">
           <ScrollReveal>
-            <div className="tech-panel-strong rounded-2xl p-6 sm:p-8 md:p-10 corner-brackets relative overflow-hidden">
+            <div className="tech-panel-strong rounded-2xl p-10 corner-brackets relative overflow-hidden">
               <div className="absolute inset-0 data-stream-bg opacity-30" />
-
+              
               <div className="relative">
-                <div className="text-[10px] sm:text-xs font-mono text-muted-foreground mb-4 sm:mb-6 md:mb-8 flex items-center justify-center gap-2 text-center">
+                <div className="text-xs font-mono text-muted-foreground mb-8 flex items-center gap-2">
                   <Activity className="h-4 w-4 text-secondary animate-pulse" />
                   <span className="tracking-wider">LIVE TELEMETRY DATA • UPDATED IN REAL-TIME</span>
                 </div>
-
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-12">
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
                   {statsData.map((stat, index) => (
                     <div key={index} className="text-center group">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-4 rounded-lg bg-secondary/10 border border-secondary/30 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
-                        <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
+                      <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-secondary/10 border border-secondary/30 flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+                        <stat.icon className="w-6 h-6 text-secondary" />
                       </div>
-                      <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-secondary mb-1 sm:mb-2">
+                      <div className="text-4xl md:text-5xl font-display font-bold text-secondary mb-2">
                         <AnimatedCounter end={stat.value} suffix={stat.suffix} />
                       </div>
-                      <div className="text-[10px] sm:text-xs font-mono text-muted-foreground tracking-wider leading-tight">{stat.label}</div>
+                      <div className="text-xs font-mono text-muted-foreground tracking-wider">{stat.label}</div>
                     </div>
                   ))}
                 </div>
@@ -806,39 +661,28 @@ export const Home = memo(() => {
         </div>
       </section>
 
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
       {/* ================================================================== */}
       {/* USER TYPES SECTION - Register as... */}
       {/* ================================================================== */}
-      <section id="register" className="py-8 md:py-12 px-4 md:px-6">
+      <section id="register" className="py-24 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
-            <div className="text-center mb-10 md:mb-16">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 tech-panel rounded-full mb-4 md:mb-6">
-                <Sparkles className="w-3 h-3 md:w-4 md:h-4 text-primary" />
-                <span className="text-[10px] md:text-xs font-mono text-primary tracking-wider">CAREERS IN AUTOMATION</span>
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-2 tech-panel rounded-full mb-6">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-xs font-mono text-primary tracking-wider">CAREERS IN AUTOMATION</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-display font-bold text-foreground tracking-wider mb-4 md:mb-6">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground tracking-wider mb-6">
                 REGISTER <span className="text-primary">AS</span>
               </h2>
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
-                Choose your path in the automation revolution. Whether you&apos;re an expert seeking opportunities
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Choose your path in the automation revolution. Whether you&apos;re an expert seeking opportunities 
                 or looking to level up your skills—we have a place for you.
               </p>
             </div>
           </ScrollReveal>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {userTypes.map((type, index) => (
               <UserTypeCard key={type.title} type={type} index={index} />
             ))}
@@ -846,52 +690,41 @@ export const Home = memo(() => {
         </div>
       </section>
 
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
       {/* ================================================================== */}
       {/* HIRING SECTION - Hire a... */}
       {/* ================================================================== */}
-      <section id="hire" className="py-8 md:py-12 px-4 md:px-6 relative">
+      <section id="hire" className="py-24 px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/5 to-transparent" />
-
+        
         <div className="container mx-auto relative">
           <ScrollReveal>
-            <div className="text-center mb-10 md:mb-16">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 tech-panel rounded-full mb-4 md:mb-6">
-                <Building2 className="w-3 h-3 md:w-4 md:h-4 text-secondary" />
-                <span className="text-[10px] md:text-xs font-mono text-secondary tracking-wider">HIRING AND TALENT</span>
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-2 tech-panel rounded-full mb-6">
+                <Building2 className="w-4 h-4 text-secondary" />
+                <span className="text-xs font-mono text-secondary tracking-wider">HIRING AND TALENT</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-display font-bold text-foreground tracking-wider mb-4 md:mb-6">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground tracking-wider mb-6">
                 HIRE <span className="text-secondary">A</span>
               </h2>
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
-                Access our elite network of verified RPA professionals.
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Access our elite network of verified RPA professionals. 
                 Find the perfect specialist for your automation needs.
               </p>
             </div>
           </ScrollReveal>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12">
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {hiringTypes.map((type, index) => (
               <ScrollReveal key={type.title} delay={index * 100}>
                 <Link to={type.link}>
-                  <div className="group tech-panel rounded-xl p-4 sm:p-5 md:p-6 hover-lift border-glow-blue h-full transition-all duration-300 hover:border-secondary/50">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg bg-secondary/10 border border-secondary/30 flex items-center justify-center mb-3 md:mb-4 group-hover:bg-secondary/20 transition-colors">
-                      <type.icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-secondary" />
+                  <div className="group tech-panel rounded-xl p-6 hover-lift border-glow-blue h-full transition-all duration-300 hover:border-secondary/50">
+                    <div className="w-14 h-14 rounded-lg bg-secondary/10 border border-secondary/30 flex items-center justify-center mb-4 group-hover:bg-secondary/20 transition-colors">
+                      <type.icon className="w-7 h-7 text-secondary" />
                     </div>
-                    <h3 className="text-sm sm:text-base md:text-lg font-display font-bold text-foreground mb-1 md:mb-2 tracking-wider group-hover:text-secondary transition-colors">
+                    <h3 className="text-lg font-display font-bold text-foreground mb-2 tracking-wider group-hover:text-secondary transition-colors">
                       {type.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground mb-3 md:mb-4">{type.description}</p>
+                    <p className="text-sm text-muted-foreground mb-4">{type.description}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-secondary">{type.stats}</span>
                       <ArrowRight className="w-4 h-4 text-secondary group-hover:translate-x-1 transition-transform" />
@@ -915,21 +748,10 @@ export const Home = memo(() => {
         </div>
       </section>
 
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
       {/* ================================================================== */}
       {/* SERVICES SECTION */}
       {/* ================================================================== */}
-      <section id="services" className="py-8 md:py-12 px-6">
+      <section id="services" className="py-24 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -942,7 +764,7 @@ export const Home = memo(() => {
               </p>
             </div>
           </ScrollReveal>
-
+          
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {servicesData.map((service, index) => (
               <ServiceCard key={service.code} service={service} index={index} />
@@ -951,21 +773,10 @@ export const Home = memo(() => {
         </div>
       </section>
 
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
       {/* ================================================================== */}
       {/* PLATFORMS SECTION */}
       {/* ================================================================== */}
-      <section className="py-8 md:py-12 px-6">
+      <section className="py-24 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -978,7 +789,7 @@ export const Home = memo(() => {
               </p>
             </div>
           </ScrollReveal>
-
+          
           <div className="flex flex-wrap justify-center gap-4 items-center">
             {platformsData.map((platform, index) => (
               <PlatformBadge key={platform.name} platform={platform} index={index} />
@@ -987,23 +798,12 @@ export const Home = memo(() => {
         </div>
       </section>
 
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
       {/* ================================================================== */}
       {/* FEATURES SECTION */}
       {/* ================================================================== */}
-      <section className="py-8 md:py-12 px-6 relative">
+      <section className="py-24 px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
-
+        
         <div className="container mx-auto relative">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -1013,7 +813,7 @@ export const Home = memo(() => {
               </h2>
             </div>
           </ScrollReveal>
-
+          
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuresData.map((feature, index) => (
               <ScrollReveal key={feature.title} delay={index * 100}>
@@ -1030,21 +830,10 @@ export const Home = memo(() => {
         </div>
       </section>
 
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
       {/* ================================================================== */}
       {/* JOBS SECTION */}
       {/* ================================================================== */}
-      <section id="jobs" className="py-8 md:py-12 px-6">
+      <section id="jobs" className="py-24 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -1057,13 +846,13 @@ export const Home = memo(() => {
               </p>
             </div>
           </ScrollReveal>
-
+          
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {jobsData.map((job, index) => (
               <JobCard key={job.title} job={job} index={index} />
             ))}
           </div>
-
+          
           <ScrollReveal>
             <div className="text-center">
               <Link to="/jobs">
@@ -1077,21 +866,10 @@ export const Home = memo(() => {
         </div>
       </section>
 
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
       {/* ================================================================== */}
       {/* PROCESS SECTION */}
       {/* ================================================================== */}
-      <section id="process" className="py-8 md:py-12 px-6">
+      <section id="process" className="py-24 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="text-center mb-16">
@@ -1104,7 +882,7 @@ export const Home = memo(() => {
               </p>
             </div>
           </ScrollReveal>
-
+          
           <div className="grid lg:grid-cols-3 gap-8">
             {phasesData.map((phase, index) => (
               <ScrollReveal key={phase.phase} delay={index * 150}>
@@ -1113,26 +891,26 @@ export const Home = memo(() => {
                   {index < phasesData.length - 1 && (
                     <div className="hidden lg:block absolute top-1/2 -right-4 w-8 border-t-2 border-dashed border-primary/30" />
                   )}
-
+                  
                   <div className="tech-panel-strong rounded-2xl p-10 hover-lift h-full corner-brackets relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
-
+                    
                     <div className="relative">
                       <div className="flex items-center justify-between mb-6">
                         <span className="text-sm font-mono text-primary bg-primary/10 px-3 py-1 rounded-full">{phase.phase}</span>
                         <div className="w-3 h-3 bg-primary rounded-full animate-pulse" />
                       </div>
-
+                      
                       <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                         <phase.icon className="h-8 w-8 text-primary" />
                       </div>
-
+                      
                       <h3 className="text-2xl font-display font-bold text-foreground mb-4 tracking-wider group-hover:text-primary transition-colors">
                         {phase.title}
                       </h3>
-
+                      
                       <p className="text-muted-foreground mb-6 leading-relaxed">{phase.desc}</p>
-
+                      
                       <div className="space-y-2">
                         {phase.features.map((feature, i) => (
                           <div key={i} className="flex items-center gap-2 text-sm">
@@ -1150,91 +928,34 @@ export const Home = memo(() => {
         </div>
       </section>
 
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* ================================================================== */}
-      {/* SUPPORT SECTION */}
-      {/* ================================================================== */}
-      <section id="support" className="py-8 md:py-12 px-6">
-        <div className="container mx-auto">
-          <ScrollReveal>
-            <div className="text-center mb-10 md:mb-16">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 tech-panel rounded-full mb-4 md:mb-6">
-                <MessageSquare className="w-3 h-3 md:w-4 md:h-4 text-primary" />
-                <span className="text-[10px] md:text-xs font-mono text-primary tracking-wider">CUSTOMER SUPPORT</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground tracking-wider mb-4 md:mb-6">
-                NEED <span className="text-primary">HELP</span>?
-              </h2>
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
-                Have questions, feedback, or need assistance? Our support team is here to help you.
-                Submit your inquiry and we'll get back to you promptly.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal>
-            <div className="text-center">
-              <Link to="/support">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 font-display text-sm tracking-wider glow-red group px-10">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  CONTACT SUPPORT
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* Section Separator */}
-      <div className="border-t border-border/30 my-8 md:my-12">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-            <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-          </div>
-        </div>
-      </div>
-
       {/* ================================================================== */}
       {/* FINAL CTA SECTION */}
       {/* ================================================================== */}
-      <section className="py-8 md:py-12 px-6">
+      <section className="py-24 px-6">
         <div className="container mx-auto">
           <ScrollReveal>
             <div className="tech-panel-strong rounded-3xl p-12 md:p-16 text-center relative overflow-hidden border-glow-red">
               {/* Background effects */}
               <div className="absolute inset-0 data-stream-bg opacity-40" />
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-
+              
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 px-4 py-2 tech-panel rounded-full mb-8">
                   <Radio className="w-4 h-4 text-primary animate-pulse" />
                   <span className="text-xs font-mono text-primary tracking-wider">TRANSMISSION READY</span>
                 </div>
-
+                
                 <Rocket className="h-16 w-16 text-primary mx-auto mb-8 animate-bounce" />
-
+                
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground mb-6 tracking-wider">
                   READY FOR <span className="text-primary">LAUNCH</span>?
                 </h2>
-
+                
                 <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-                  Join thousands of automation professionals and companies who have
+                  Join thousands of automation professionals and companies who have 
                   already transformed their operations with RPA Helpline.
                 </p>
-
+                
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Link to="/register">
                     <Button size="lg" className="bg-primary hover:bg-primary/90 font-display text-sm tracking-wider glow-red group px-10 py-7 text-lg">
@@ -1243,17 +964,17 @@ export const Home = memo(() => {
                       <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
-                  <Link to="/support">
+                  <Link to="/sign-in">
                     <Button size="lg" variant="outline" className="font-display text-sm tracking-wider border-foreground/30 hover:bg-foreground/10 px-10 py-7 text-lg">
                       <Navigation className="mr-2 h-5 w-5" />
                       CONTACT SUPPORT
                     </Button>
                   </Link>
                 </div>
-
+                
                 <div className="mt-12 pt-8 border-t border-border/50">
                   <p className="text-sm text-muted-foreground font-mono">
-                    <span className="text-secondary">44+</span> specialists • <span className="text-secondary">22+</span> projects • <span className="text-secondary">50+</span> countries
+                    <span className="text-secondary">500+</span> specialists • <span className="text-secondary">1200+</span> projects • <span className="text-secondary">50+</span> countries
                   </p>
                 </div>
               </div>

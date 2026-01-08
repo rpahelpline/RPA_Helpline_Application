@@ -165,7 +165,7 @@ export const AccountRecovery = memo(({ email, onCancel, onSuccess }) => {
         if (onSuccess) {
           onSuccess();
         } else {
-          navigate('/profile-setup');
+          navigate('/dashboard');
         }
       }
     } catch (error) {
