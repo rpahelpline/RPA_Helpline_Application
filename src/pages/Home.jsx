@@ -586,18 +586,9 @@ export const Home = memo(() => {
                   />
                 </div>
                 
-                <p className="text-lg text-muted-foreground mb-4 max-w-3xl mx-auto leading-relaxed">
-                  Connecting businesses with elite RPA talent—hire specialists, find opportunities, or scale your automation expertise.
+                <p className="text-lg text-muted-foreground mb-12 max-w-5xl mx-auto leading-relaxed">
+                  Connecting businesses with elite RPA talent—hire specialists, find opportunities, or scale your automation expertise. <a href="mailto:contact@rpahelpline.com" className="hover:text-foreground transition-colors">contact@rpahelpline.com</a> | <a href="tel:+919490030441" className="hover:text-foreground transition-colors">+91 9490030441</a>
                 </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 text-sm text-muted-foreground">
-                  <a href="mailto:contact@rpahelpline.com" className="hover:text-foreground transition-colors">
-                    contact@rpahelpline.com
-                  </a>
-                  <span className="hidden sm:inline text-border">|</span>
-                  <a href="tel:+919490030441" className="hover:text-foreground transition-colors">
-                    +91 9490030441
-                  </a>
-                </div>
                 
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
