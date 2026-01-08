@@ -174,7 +174,7 @@ export const Navbar = memo(() => {
                 <Button
                   variant="primary"
                   size="md"
-                  onClick={() => navigate('/register/client')}
+                  onClick={() => navigate('/register')}
                   className="font-display text-xs tracking-wider glow-red"
                 >
                   LAUNCH MISSION
@@ -281,7 +281,7 @@ export const Navbar = memo(() => {
                     variant="primary"
                     size="md"
                     onClick={() => {
-                      navigate('/register/client');
+                      navigate('/register');
                       setMobileMenuOpen(false);
                     }}
                     className="w-full glow-red"

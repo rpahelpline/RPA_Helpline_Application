@@ -37,11 +37,6 @@ const ProjectDetail = lazyLoad(() => import('../pages/ProjectDetail'), 'ProjectD
 const HowItWorks = lazyLoad(() => import('../pages/HowItWorks'), 'HowItWorks');
 const Dashboard = lazyLoad(() => import('../pages/Dashboard'), 'Dashboard');
 const Register = lazyLoad(() => import('../pages/Register'), 'Register');
-const RegisterClient = lazyLoad(() => import('../pages/Register/RegisterClient'), 'RegisterClient');
-const RegisterFreelancer = lazyLoad(() => import('../pages/Register/RegisterFreelancer'), 'RegisterFreelancer');
-const RegisterDeveloper = lazyLoad(() => import('../pages/Register/RegisterDeveloper'), 'RegisterDeveloper');
-const RegisterTrainer = lazyLoad(() => import('../pages/Register/RegisterTrainer'), 'RegisterTrainer');
-const RegisterJobSeeker = lazyLoad(() => import('../pages/Register/RegisterJobSeeker'), 'RegisterJobSeeker');
 const RegisterProject = lazyLoad(() => import('../pages/Register/RegisterProject'), 'RegisterProject');
 const Jobs = lazyLoad(() => import('../pages/Jobs'), 'Jobs');
 const NotFound = lazyLoad(() => import('../pages/NotFound'), 'NotFound');
@@ -100,11 +95,6 @@ export const AppRoutes = () => {
           <Route path="/jobs" element={<RouteWrapper><Jobs /></RouteWrapper>} />
           <Route path="/how-it-works" element={<RouteWrapper><HowItWorks /></RouteWrapper>} />
           <Route path="/register" element={<RouteWrapper><Register /></RouteWrapper>} />
-          <Route path="/register/client" element={<RouteWrapper><RegisterClient /></RouteWrapper>} />
-          <Route path="/register/freelancer" element={<RouteWrapper><RegisterFreelancer /></RouteWrapper>} />
-          <Route path="/register/developer" element={<RouteWrapper><RegisterDeveloper /></RouteWrapper>} />
-          <Route path="/register/trainer" element={<RouteWrapper><RegisterTrainer /></RouteWrapper>} />
-          <Route path="/register/jobseeker" element={<RouteWrapper><RegisterJobSeeker /></RouteWrapper>} />
           
           {/* OAuth Callbacks */}
           <Route path="/auth/github/callback" element={<RouteWrapper withLayout={false}><GitHubCallback /></RouteWrapper>} />

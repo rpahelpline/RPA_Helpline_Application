@@ -16,13 +16,13 @@ export const Footer = () => {
           </div>
           <div className="text-center md:text-left">
             <p className="text-xs font-mono text-muted-foreground mb-2">COMMUNICATION CHANNEL</p>
-            <a href="mailto:contact@rpahelpline.com" className="text-sm text-secondary hover:text-secondary/80 transition-colors">
+            <a href="mailto:contact@rpahelpline.com" className="text-sm text-foreground hover:text-secondary transition-colors">
               contact@rpahelpline.com
             </a>
           </div>
           <div className="text-center md:text-right">
             <p className="text-xs font-mono text-muted-foreground mb-2">DIRECT LINE</p>
-            <a href="tel:+919490030441" className="text-sm text-secondary hover:text-secondary/80 transition-colors">
+            <a href="tel:+919490030441" className="text-sm text-foreground hover:text-secondary transition-colors">
               +91 9490030441
             </a>
           </div>

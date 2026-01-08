@@ -221,7 +221,7 @@ export const useAuthStore = create((set, get) => ({
   // =====================
   
   // Google Sign-In
-  loginWithGoogle: async () => {
+  loginWithGoogle: async (userRole) => {
     try {
       set({ isLoading: true, error: null });
       
@@ -237,8 +237,8 @@ export const useAuthStore = create((set, get) => ({
       // Get Google credential
       const { credential } = await oAuthHelper.signInWithGoogle();
       
-      // Send to backend for verification
-      const { user, token, refreshToken } = await authApi.googleAuth(credential);
+      // Send to backend for verification (include desired role for new signups)
+      const { user, token, refreshToken } = await authApi.googleAuth(credential, userRole);
       
       tokenManager.setTokens(token, refreshToken);
       

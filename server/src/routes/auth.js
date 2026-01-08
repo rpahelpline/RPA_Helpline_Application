@@ -350,7 +350,7 @@ router.post('/logout', authenticateToken, asyncHandler(async (req, res) => {
 
 // Google OAuth
 router.post('/google', asyncHandler(async (req, res) => {
-  const { token: googleToken } = req.body;
+  const { token: googleToken, user_type } = req.body;
 
   if (!googleToken) {
     return res.status(400).json({ error: 'Google token is required' });
@@ -426,15 +426,18 @@ router.post('/google', asyncHandler(async (req, res) => {
 
       user = newUser;
 
-      // Create profile with default user type (can be updated later)
+      // Determine requested user type for new Google signups (fallback to freelancer)
+      const requestedUserType = Object.values(USER_TYPES).includes(user_type) ? user_type : USER_TYPES.FREELANCER;
+
+      // Create profile with requested user type
       const { data: newProfile, error: profileError } = await supabaseAdmin
         .from('profiles')
         .insert({
           user_id: user.id,
           full_name: name || email.split('@')[0],
-          user_type: USER_TYPES.FREELANCER, // Default type
+          user_type: requestedUserType,
           display_name: name?.split(' ')[0] || email.split('@')[0],
-          headline: USER_TYPE_LABELS[USER_TYPES.FREELANCER],
+          headline: USER_TYPE_LABELS[requestedUserType],
           avatar_url: picture || null,
           is_verified: true,
         })
@@ -449,9 +452,9 @@ router.post('/google', asyncHandler(async (req, res) => {
       }
 
       profile = newProfile;
-
-      // Create default specialized profile
-      await createSpecializedProfile(profile.id, USER_TYPES.FREELANCER);
+      
+      // Create specialized profile matching requested user type
+      await createSpecializedProfile(profile.id, requestedUserType);
     }
 
     if (!profile) {

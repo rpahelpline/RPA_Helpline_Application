@@ -183,7 +183,7 @@ export const Register = memo(() => {
       selectedBorder: 'border-primary shadow-primary/20',
       iconBg: 'bg-primary/20 border border-primary/30',
       iconColor: 'text-primary',
-      route: '/register/freelancer',
+      route: '/register',
     },
     {
       id: 'job_seeker',
@@ -196,7 +196,7 @@ export const Register = memo(() => {
       selectedBorder: 'border-secondary shadow-secondary/20',
       iconBg: 'bg-secondary/20 border border-secondary/30',
       iconColor: 'text-secondary',
-      route: '/register/job-seeker',
+      route: '/register',
     },
     {
       id: 'trainer',
@@ -209,7 +209,7 @@ export const Register = memo(() => {
       selectedBorder: 'border-accent shadow-accent/20',
       iconBg: 'bg-accent/20 border border-accent/30',
       iconColor: 'text-accent',
-      route: '/register/trainer',
+      route: '/register',
     },
     {
       id: 'ba_pm',
@@ -222,7 +222,7 @@ export const Register = memo(() => {
       selectedBorder: 'border-nasa-gold shadow-nasa-gold/20',
       iconBg: 'bg-nasa-gold/20 border border-nasa-gold/30',
       iconColor: 'text-nasa-gold',
-      route: '/register/developer',
+      route: '/register',
     },
   ], []);
 
@@ -238,7 +238,7 @@ export const Register = memo(() => {
       selectedBorder: 'border-primary shadow-primary/20',
       iconBg: 'bg-primary/20 border border-primary/30',
       iconColor: 'text-primary',
-      route: '/register/client',
+      route: '/register',
     },
     {
       id: 'client_trainer',
@@ -251,7 +251,7 @@ export const Register = memo(() => {
       selectedBorder: 'border-secondary shadow-secondary/20',
       iconBg: 'bg-secondary/20 border border-secondary/30',
       iconColor: 'text-secondary',
-      route: '/register/client',
+      route: '/register',
     },
     {
       id: 'client_ba',
@@ -264,7 +264,7 @@ export const Register = memo(() => {
       selectedBorder: 'border-accent shadow-accent/20',
       iconBg: 'bg-accent/20 border border-accent/30',
       iconColor: 'text-accent',
-      route: '/register/client',
+      route: '/register',
     },
     {
       id: 'client_freelancer',
@@ -277,7 +277,7 @@ export const Register = memo(() => {
       selectedBorder: 'border-nasa-gold shadow-nasa-gold/20',
       iconBg: 'bg-nasa-gold/20 border border-nasa-gold/30',
       iconColor: 'text-nasa-gold',
-      route: '/register/client',
+      route: '/register',
     },
   ], []);
 
@@ -407,7 +407,9 @@ export const Register = memo(() => {
     setSocialLoading('google');
 
     try {
-      const result = await loginWithGoogle();
+	  const userRole = selectedType.id.startsWith('client') ? 'client' : selectedType.id;
+
+	  const result = await loginWithGoogle(userRole);
 
       if (result.cancelled) {
         setSocialLoading(null);
@@ -434,7 +436,7 @@ export const Register = memo(() => {
       toast.error('Google sign-up failed. Please try again.');
       setSocialLoading(null);
     }
-  }, [loginWithGoogle, navigate, toast, selectedType, setRole]);
+	  }, [loginWithGoogle, navigate, toast, selectedType, setRole]);
 
 
   // Get current types based on category

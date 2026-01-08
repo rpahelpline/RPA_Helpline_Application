@@ -388,7 +388,7 @@ export const Home = memo(() => {
       code: "CON-01", 
       desc: "Connect with certified RPA experts for consultation, troubleshooting, and strategic automation guidance.",
       features: ["Expert consultations", "Rapid diagnostics", "Architecture review", "Best practices"],
-      link: "/register/freelancer"
+      link: "/register"
     },
     { 
       icon: Users, 
@@ -396,7 +396,7 @@ export const Home = memo(() => {
       code: "HIR-02", 
       desc: "Access a global network of verified automation specialists ready for immediate deployment.",
       features: ["Verified profiles", "Skill assessments", "Flexible engagement", "Fast matching"],
-      link: "/register/client"
+      link: "/register"
     },
     { 
       icon: Briefcase, 
@@ -404,7 +404,7 @@ export const Home = memo(() => {
       code: "JOB-03", 
       desc: "Discover exciting career opportunities in robotic process automation across leading organizations.",
       features: ["Remote positions", "Competitive pay", "Top companies", "Career growth"],
-      link: "/register/job-seeker"
+      link: "/register"
     },
     { 
       icon: GraduationCap, 
@@ -412,7 +412,7 @@ export const Home = memo(() => {
       code: "TRN-04", 
       desc: "Master RPA platforms with expert-led training programs and hands-on certification courses.",
       features: ["Certified courses", "Hands-on labs", "Expert instructors", "Career support"],
-      link: "/register/trainer"
+      link: "/register"
     },
   ], []);
 
@@ -432,7 +432,7 @@ export const Home = memo(() => {
       icon: Code,
       bgColor: "bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30",
       iconColor: "text-primary",
-      link: "/register/freelancer",
+      link: "/register",
       benefits: ["Flexible schedule", "Premium rates", "Global clients", "Build portfolio"]
     },
     {
@@ -441,7 +441,7 @@ export const Home = memo(() => {
       icon: Briefcase,
       bgColor: "bg-gradient-to-br from-secondary/20 to-secondary/5 border border-secondary/30",
       iconColor: "text-secondary",
-      link: "/register/job-seeker",
+      link: "/register",
       benefits: ["Full-time roles", "Benefits packages", "Career growth", "Top employers"]
     },
     {
@@ -450,7 +450,7 @@ export const Home = memo(() => {
       icon: GraduationCap,
       bgColor: "bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/30",
       iconColor: "text-accent",
-      link: "/register/trainer",
+      link: "/register",
       benefits: ["Set curriculum", "Online courses", "Certification", "Passive income"]
     },
     {
@@ -459,7 +459,7 @@ export const Home = memo(() => {
       icon: Target,
       bgColor: "bg-gradient-to-br from-nasa-gold/20 to-nasa-gold/5 border border-nasa-gold/30",
       iconColor: "text-nasa-gold",
-      link: "/register/developer",
+      link: "/register",
       benefits: ["Strategic roles", "Team leadership", "High impact", "Executive visibility"]
     },
   ], []);
@@ -469,28 +469,28 @@ export const Home = memo(() => {
       title: "HIRE DEVELOPER",
       description: "Find expert RPA developers for your automation projects",
       icon: Code,
-      link: "/register/client",
+      link: "/register",
       stats: "500+ developers"
     },
     {
       title: "HIRE TRAINER",
       description: "Get certified trainers for your team's RPA education",
       icon: GraduationCap,
-      link: "/register/client",
+      link: "/register",
       stats: "100+ trainers"
     },
     {
       title: "HIRE BA/PM",
       description: "Strategic automation leaders for your initiatives",
       icon: Target,
-      link: "/register/client",
+      link: "/register",
       stats: "200+ analysts"
     },
     {
       title: "HIRE FREELANCER",
       description: "Flexible talent for short-term automation projects",
       icon: Users,
-      link: "/register/client",
+      link: "/register",
       stats: "300+ freelancers"
     },
   ], []);
@@ -586,11 +586,18 @@ export const Home = memo(() => {
                   />
                 </div>
                 
-                <p className="text-lg text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
-                  The premier platform connecting businesses with elite RPA talent. 
-                  Whether you&apos;re looking to hire specialists, find your next opportunity, 
-                  or scale your automation expertise—your mission starts here.
+                <p className="text-lg text-muted-foreground mb-4 max-w-3xl mx-auto leading-relaxed">
+                  Connecting businesses with elite RPA talent—hire specialists, find opportunities, or scale your automation expertise.
                 </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 text-sm text-muted-foreground">
+                  <a href="mailto:contact@rpahelpline.com" className="hover:text-foreground transition-colors">
+                    contact@rpahelpline.com
+                  </a>
+                  <span className="hidden sm:inline text-border">|</span>
+                  <a href="tel:+919490030441" className="hover:text-foreground transition-colors">
+                    +91 9490030441
+                  </a>
+                </div>
                 
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
@@ -737,7 +744,7 @@ export const Home = memo(() => {
 
           <ScrollReveal>
             <div className="text-center">
-              <Link to="/register/client">
+              <Link to="/register/project">
                 <Button size="lg" className="bg-secondary hover:bg-secondary/90 font-display text-sm tracking-wider glow-blue group px-10">
                   POST A PROJECT
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />

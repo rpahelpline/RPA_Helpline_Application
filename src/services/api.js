@@ -177,7 +177,7 @@ export const authApi = {
   updatePassword: (passwords) => api.put('/auth/password', passwords),
   
   // OAuth endpoints
-  googleAuth: (googleToken) => api.post('/auth/google', { token: googleToken }),
+  googleAuth: (googleToken, userType) => api.post('/auth/google', { token: googleToken, user_type: userType }),
   githubAuth: (code) => api.post('/auth/github', { code }),
   
   // OAuth URL getters (for redirect flow)
