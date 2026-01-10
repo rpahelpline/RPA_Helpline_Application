@@ -4,13 +4,19 @@
 const getApiBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (envUrl) {
-    // Remove trailing slash if present and ensure it ends with /api if not already
-    const cleanUrl = envUrl.replace(/\/+$/, '');
-    // If it's a full URL or absolute path, use it as-is (assumes it includes /api)
+    // Remove trailing slashes
+    let cleanUrl = envUrl.replace(/\/+$/, '');
+    
+    // If it's a full URL or absolute path
     if (cleanUrl.startsWith('http') || cleanUrl.startsWith('/')) {
+      // Ensure it ends with /api (unless it's already a complete API URL)
+      if (!cleanUrl.includes('/api') && !cleanUrl.endsWith('/api')) {
+        cleanUrl = `${cleanUrl}/api`;
+      }
       return cleanUrl;
     }
-    return `/${cleanUrl}`;
+    // Relative path without leading slash
+    return `/api/${cleanUrl}`;
   }
   // Default: relative /api in production, localhost in development
   return import.meta.env.PROD ? '/api' : 'http://localhost:3000/api';
@@ -74,7 +80,9 @@ const handleResponse = async (response) => {
       if (refreshToken && data.error === 'Token expired') {
         // Try to refresh the token
         try {
-          const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          // Use apiRequest helper to ensure consistent URL construction
+          const refreshUrl = `${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}auth/refresh`.replace(/([^:]\/)\/+/g, '$1');
+          const refreshResponse = await fetch(refreshUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken })
