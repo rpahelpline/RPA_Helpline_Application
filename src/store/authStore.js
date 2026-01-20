@@ -213,7 +213,9 @@ export const useAuthStore = create((set, get) => ({
 
   // Legacy support - get role
   get role() {
-    return get().profile?.user_type || get().profile?.role || null;
+    const state = get();
+    // Check profile first, then user as fallback
+    return state.profile?.user_type || state.profile?.role || state.user?.user_type || state.user?.role || null;
   },
   
   // =====================

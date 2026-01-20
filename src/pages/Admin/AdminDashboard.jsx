@@ -363,14 +363,32 @@ export const AdminDashboard = memo(() => {
 
   // Project Handlers
   const handleEditProject = (project) => {
-    setEditingProject({ ...project });
+    // Only keep updateable fields
+    setEditingProject({
+      id: project.id,
+      title: project.title,
+      description: project.description,
+      status: project.status,
+      urgency: project.urgency,
+      budget_min: project.budget_min,
+      budget_max: project.budget_max,
+    });
     setProjectEditModalOpen(true);
   };
 
   const handleSaveProject = async () => {
     try {
       setError(null);
-      await adminApi.updateProject(editingProject.id, editingProject);
+      // Only send updateable fields
+      const updateData = {
+        title: editingProject.title,
+        description: editingProject.description,
+        status: editingProject.status,
+        urgency: editingProject.urgency,
+        budget_min: editingProject.budget_min,
+        budget_max: editingProject.budget_max,
+      };
+      await adminApi.updateProject(editingProject.id, updateData);
       toast.success('Project updated successfully');
       setProjectEditModalOpen(false);
       setEditingProject(null);
@@ -398,14 +416,34 @@ export const AdminDashboard = memo(() => {
 
   // Job Handlers
   const handleEditJob = (job) => {
-    setEditingJob({ ...job });
+    // Only keep updateable fields
+    setEditingJob({
+      id: job.id,
+      title: job.title,
+      description: job.description,
+      status: job.status,
+      job_type: job.job_type || job.employment_type,
+      salary_min: job.salary_min,
+      salary_max: job.salary_max,
+      locations: job.locations,
+    });
     setJobEditModalOpen(true);
   };
 
   const handleSaveJob = async () => {
     try {
       setError(null);
-      await adminApi.updateJob(editingJob.id, editingJob);
+      // Only send updateable fields
+      const updateData = {
+        title: editingJob.title,
+        description: editingJob.description,
+        status: editingJob.status,
+        employment_type: editingJob.job_type || editingJob.employment_type,
+        salary_min: editingJob.salary_min,
+        salary_max: editingJob.salary_max,
+        locations: editingJob.locations,
+      };
+      await adminApi.updateJob(editingJob.id, updateData);
       toast.success('Job updated successfully');
       setJobEditModalOpen(false);
       setEditingJob(null);

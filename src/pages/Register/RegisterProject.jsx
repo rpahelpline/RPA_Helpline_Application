@@ -15,8 +15,9 @@ import { useToast } from '../../hooks/useToast';
 export const RegisterProject = memo(() => {
   const navigate = useNavigate();
   const { createProject, isLoading } = useProjectStore();
-  const { user, isAuthenticated, profile } = useAuthStore();
-  const role = profile?.user_type || user?.user_type || null;
+  const { user, isAuthenticated, profile, role: authRole } = useAuthStore();
+  // Get role from multiple sources with fallback
+  const role = authRole || profile?.user_type || user?.user_type || null;
   const { platforms, skills, loading: loadingTaxonomy } = useTaxonomy();
   const toast = useToast();
   const hasCheckedAuth = useRef(false);

@@ -495,6 +495,19 @@ router.put('/jobs/:id', idValidation, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
+  // First check if job exists
+  const { data: existingJob, error: fetchError } = await supabaseAdmin
+    .from('jobs')
+    .select('id')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !existingJob) {
+    console.error(`[Admin] Job not found: ${id}`, fetchError);
+    return res.status(404).json({ error: 'Job not found', job_id: id });
+  }
+
+  // Update job
   const { data: job, error } = await supabaseAdmin
     .from('jobs')
     .update({
@@ -505,8 +518,9 @@ router.put('/jobs/:id', idValidation, asyncHandler(async (req, res) => {
     .select()
     .single();
 
-  if (error || !job) {
-    return res.status(404).json({ error: 'Job not found' });
+  if (error) {
+    console.error(`[Admin] Error updating job ${id}:`, error);
+    return res.status(500).json({ error: 'Failed to update job', details: error.message });
   }
 
   res.json({ message: 'Job updated successfully', job });
@@ -516,13 +530,26 @@ router.put('/jobs/:id', idValidation, asyncHandler(async (req, res) => {
 router.delete('/jobs/:id', idValidation, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
+  // First check if job exists
+  const { data: existingJob, error: fetchError } = await supabaseAdmin
+    .from('jobs')
+    .select('id')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !existingJob) {
+    console.error(`[Admin] Job not found for deletion: ${id}`, fetchError);
+    return res.status(404).json({ error: 'Job not found', job_id: id });
+  }
+
   const { error } = await supabaseAdmin
     .from('jobs')
     .delete()
     .eq('id', id);
 
   if (error) {
-    return res.status(500).json({ error: 'Failed to delete job' });
+    console.error(`[Admin] Error deleting job ${id}:`, error);
+    return res.status(500).json({ error: 'Failed to delete job', details: error.message });
   }
 
   res.json({ message: 'Job deleted successfully' });
@@ -583,6 +610,19 @@ router.put('/projects/:id', idValidation, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
+  // First check if project exists
+  const { data: existingProject, error: fetchError } = await supabaseAdmin
+    .from('projects')
+    .select('id')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !existingProject) {
+    console.error(`[Admin] Project not found: ${id}`, fetchError);
+    return res.status(404).json({ error: 'Project not found', project_id: id });
+  }
+
+  // Update project
   const { data: project, error } = await supabaseAdmin
     .from('projects')
     .update({
@@ -593,8 +633,9 @@ router.put('/projects/:id', idValidation, asyncHandler(async (req, res) => {
     .select()
     .single();
 
-  if (error || !project) {
-    return res.status(404).json({ error: 'Project not found' });
+  if (error) {
+    console.error(`[Admin] Error updating project ${id}:`, error);
+    return res.status(500).json({ error: 'Failed to update project', details: error.message });
   }
 
   res.json({ message: 'Project updated successfully', project });
@@ -604,13 +645,26 @@ router.put('/projects/:id', idValidation, asyncHandler(async (req, res) => {
 router.delete('/projects/:id', idValidation, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
+  // First check if project exists
+  const { data: existingProject, error: fetchError } = await supabaseAdmin
+    .from('projects')
+    .select('id')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !existingProject) {
+    console.error(`[Admin] Project not found for deletion: ${id}`, fetchError);
+    return res.status(404).json({ error: 'Project not found', project_id: id });
+  }
+
   const { error } = await supabaseAdmin
     .from('projects')
     .delete()
     .eq('id', id);
 
   if (error) {
-    return res.status(500).json({ error: 'Failed to delete project' });
+    console.error(`[Admin] Error deleting project ${id}:`, error);
+    return res.status(500).json({ error: 'Failed to delete project', details: error.message });
   }
 
   res.json({ message: 'Project deleted successfully' });
