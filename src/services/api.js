@@ -373,6 +373,7 @@ export const projectApi = {
   getMyProjects: (params) => api.get('/projects/me/projects', params),
   getApplications: (id, params) => api.get(`/projects/${id}/applications`, params),
   getApplicationStats: (id) => api.get(`/projects/${id}/applications/stats`),
+  updateApplicationStatus: (projectId, applicationId, statusData) => api.put(`/projects/${projectId}/applications/${applicationId}`, statusData),
 };
 
 // =====================

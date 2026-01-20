@@ -45,7 +45,7 @@ export const ProjectApplicationsManager = memo(({ projectId, onClose }) => {
   const handleStatusUpdate = async (applicationId, newStatus) => {
     setUpdating(applicationId);
     try {
-      await projectApi.updateApplicationStatus(projectId, applicationId, newStatus);
+      await projectApi.updateApplicationStatus(projectId, applicationId, { status: newStatus });
       toast.success(`Application ${newStatus} successfully`);
       await loadApplications();
     } catch (err) {

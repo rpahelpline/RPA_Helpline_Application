@@ -40,7 +40,7 @@ export const JobApplicationsManager = memo(({ jobId, onClose }) => {
   const handleStatusUpdate = async (applicationId, newStatus) => {
     setUpdating(applicationId);
     try {
-      await jobApi.updateApplicationStatus(jobId, applicationId, newStatus);
+      await jobApi.updateApplicationStatus(jobId, applicationId, { status: newStatus });
       toast.success(`Application ${newStatus} successfully`);
       await loadApplications();
     } catch (err) {
