@@ -10,7 +10,7 @@ import { Textarea } from '../components/ui/Textarea';
 import { LoadingSpinner, SkeletonLoader } from '../components/common/LoadingSpinner';
 import { ProjectApplicationsManager } from '../components/applications/ProjectApplicationsManager';
 import { projectApi } from '../services/api';
-import { useEffect, useState, memo, useCallback } from 'react';
+import { useEffect, useState, memo, useCallback, useRef } from 'react';
 import { Clock, DollarSign, Building2, ArrowLeft, CheckCircle, Activity, Loader2, Users } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useToast } from '../hooks/useToast';
@@ -21,8 +21,10 @@ export const ProjectDetail = memo(() => {
   const { isAuthenticated, user, profile } = useAuthStore();
   const role = profile?.user_type || user?.user_type || null;
   const toast = useToast();
+  const toastRef = useRef(toast);
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [applying, setApplying] = useState(false);
   const [applicationData, setApplicationData] = useState({
     cover_letter: '',
@@ -33,24 +35,53 @@ export const ProjectDetail = memo(() => {
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
 
   useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     const loadProject = async () => {
       try {
         setLoading(true);
+        setLoadError(null);
         const { project: projectData } = await projectApi.getById(id);
-        setProject(projectData);
+        if (!cancelled) setProject(projectData);
       } catch (err) {
         console.error('Failed to load project:', err);
-        toast.error(err.error || 'Failed to load project');
-        navigate('/projects');
+        if (!cancelled) {
+          // For 429 / transient issues, don't redirect away; show an error state with retry.
+          setLoadError(err);
+          toastRef.current?.error?.(err?.error || err?.message || 'Failed to load project');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     if (id) {
       loadProject();
     }
-  }, [id, navigate, toast]);
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const handleRetryLoad = useCallback(async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      setLoadError(null);
+      const { project: projectData } = await projectApi.getById(id);
+      setProject(projectData);
+    } catch (err) {
+      console.error('Failed to load project (retry):', err);
+      setLoadError(err);
+      toastRef.current?.error?.(err?.error || err?.message || 'Failed to load project');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
   const handleApply = useCallback(async () => {
     if (!isAuthenticated) {
@@ -96,6 +127,38 @@ export const ProjectDetail = memo(() => {
           <div className="max-w-4xl mx-auto">
             <SkeletonLoader lines={3} className="mb-6" />
             <SkeletonLoader lines={5} />
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    const isRateLimited = loadError?.status === 429;
+    const retryAfter = loadError?.data?.retryAfter;
+
+    return (
+      <div className="min-h-screen pt-20">
+        <Container className="py-12">
+          <div className="max-w-4xl mx-auto">
+            <Card className="tech-panel border-border">
+              <CardHeader>
+                <CardTitle className="text-lg font-display">Unable to load project</CardTitle>
+                <CardDescription className="font-mono text-xs">
+                  {isRateLimited
+                    ? `Rate limited${retryAfter ? ` (retry after ~${retryAfter}s)` : ''}. Please wait and try again.`
+                    : (loadError?.error || loadError?.message || 'An unexpected error occurred.')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={() => navigate('/projects')} className="font-mono text-xs">
+                  BACK TO PROJECTS
+                </Button>
+                <Button onClick={handleRetryLoad} className="font-mono text-xs">
+                  RETRY
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </Container>
       </div>
