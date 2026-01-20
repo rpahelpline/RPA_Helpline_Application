@@ -26,7 +26,8 @@ router.get('/', optionalAuth, paginationValidation, asyncHandler(async (req, res
   const offset = (page - 1) * limit;
 
   // Query freelancer_profiles with join to profiles
-  // Try simpler syntax first - Supabase auto-detects foreign keys
+  // freelancer_profiles has profile_id referencing profiles(id)
+  // Try using the relationship without explicit foreign key name first
   let query = supabaseAdmin
     .from('freelancer_profiles')
     .select(`

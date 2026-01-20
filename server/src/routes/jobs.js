@@ -927,20 +927,12 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('e
   // Log update data for debugging
   console.log('Updating job application:', { applicationId, updateData });
 
-  const { data: updatedApplication, error: updateError } = await supabaseAdmin
+  // First, try to update without the join to see if update works
+  const { data: updateResult, error: updateError } = await supabaseAdmin
     .from('job_applications')
     .update(updateData)
     .eq('id', applicationId)
-    .select(`
-      *,
-      applicant:profiles!job_applications_applicant_id_fkey(
-        id,
-        full_name,
-        avatar_url,
-        headline,
-        email
-      )
-    `)
+    .select('*')
     .maybeSingle();
 
   if (updateError) {
@@ -954,6 +946,47 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('e
     return res.status(500).json({ 
       error: 'Failed to update application',
       details: updateError.message || 'Database error occurred'
+    });
+  }
+
+  if (!updateResult) {
+    console.error('Update succeeded but no data returned for application:', applicationId);
+    return res.status(500).json({ 
+      error: 'Update succeeded but no data returned',
+      details: 'The application was updated but could not be retrieved'
+    });
+  }
+
+  // Now fetch the full application with applicant details
+  const { data: updatedApplication, error: fetchError } = await supabaseAdmin
+    .from('job_applications')
+    .select(`
+      *,
+      applicant:profiles(
+        id,
+        full_name,
+        avatar_url,
+        headline,
+        email
+      )
+    `)
+    .eq('id', applicationId)
+    .maybeSingle();
+
+  if (fetchError) {
+    console.error('Error fetching updated application:', fetchError);
+    // Return the basic update result even if fetch fails
+    const { data: applicant } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, avatar_url, headline, email')
+      .eq('id', updateResult.applicant_id)
+      .maybeSingle();
+    
+    return res.json({ 
+      application: {
+        ...updateResult,
+        applicant: applicant || null
+      }
     });
   }
 
