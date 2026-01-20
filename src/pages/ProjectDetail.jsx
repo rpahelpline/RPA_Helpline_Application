@@ -50,17 +50,20 @@ export const ProjectDetail = memo(() => {
       loadingTimeoutRef.current = null;
     }
 
-    // Reset flags when ID changes (but keep project data until new one loads)
-    if (project?.id !== id) {
+    // Reset flags when ID changes
+    const currentProjectId = project?.id;
+    if (currentProjectId !== id) {
       hasLoadedRef.current = false;
       rateLimitRef.current = false;
       setLoadError(null);
-      // Don't reset project here - let it be replaced when new data loads
-      // This prevents flashing "Project not found" message
+      // Clear project if ID changed
+      if (currentProjectId && currentProjectId !== id) {
+        setProject(null);
+      }
     }
 
     // Skip if already loaded the same project successfully
-    if (hasLoadedRef.current && project?.id === id && !loadError) {
+    if (hasLoadedRef.current && currentProjectId === id && !loadError && project) {
       setLoading(false);
       return;
     }
@@ -92,8 +95,12 @@ export const ProjectDetail = memo(() => {
       }
 
       try {
+        console.log('[ProjectDetail] Fetching project:', id);
         const response = await projectApi.getById(id);
+        console.log('[ProjectDetail] API response:', response);
+        
         const projectData = response?.project || response;
+        console.log('[ProjectDetail] Extracted project data:', projectData);
         
         if (!cancelled) {
           if (!projectData || !projectData.id) {
@@ -106,6 +113,7 @@ export const ProjectDetail = memo(() => {
             setLoading(false);
             hasLoadedRef.current = false;
           } else {
+            console.log('[ProjectDetail] Setting project:', projectData.id);
             setProject(projectData);
             setLoading(false);
             rateLimitRef.current = false;
@@ -117,7 +125,7 @@ export const ProjectDetail = memo(() => {
           }
         }
       } catch (err) {
-        console.error('Failed to load project:', err);
+        console.error('[ProjectDetail] Failed to load project:', err);
         if (!cancelled) {
           setLoadError(err);
           setLoading(false);
@@ -232,6 +240,18 @@ export const ProjectDetail = memo(() => {
       setApplying(false);
     }
   }, [isAuthenticated, role, navigate, toast, id, applicationData]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[ProjectDetail] Render state:', {
+      id,
+      loading,
+      hasProject: !!project,
+      projectId: project?.id,
+      hasError: !!loadError,
+      errorStatus: loadError?.status
+    });
+  }, [id, loading, project, loadError]);
 
   // Show loading state
   if (loading && !project) {
