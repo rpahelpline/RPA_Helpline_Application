@@ -22,6 +22,7 @@ export const ProjectDetail = memo(() => {
   const role = profile?.user_type || user?.user_type || null;
   const toast = useToast();
   const toastRef = useRef(toast);
+  const rateLimitRef = useRef(false);
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -41,27 +42,46 @@ export const ProjectDetail = memo(() => {
   useEffect(() => {
     let cancelled = false;
 
+    // Skip if we've hit rate limit (prevents retry loops)
+    if (rateLimitRef.current) {
+      console.warn('[ProjectDetail] Skipping load - rate limited, use retry button');
+      return;
+    }
+
     const loadProject = async () => {
       try {
-        setLoading(true);
-        setLoadError(null);
+        if (!cancelled) {
+          setLoading(true);
+          setLoadError(null);
+        }
         const { project: projectData } = await projectApi.getById(id);
-        if (!cancelled) setProject(projectData);
+        if (!cancelled) {
+          setProject(projectData);
+          setLoading(false);
+          rateLimitRef.current = false; // Reset on success
+        }
       } catch (err) {
         console.error('Failed to load project:', err);
         if (!cancelled) {
-          // For 429 / transient issues, don't redirect away; show an error state with retry.
           setLoadError(err);
-          toastRef.current?.error?.(err?.error || err?.message || 'Failed to load project');
+          setLoading(false);
+          // Mark rate limit so we don't retry automatically
+          if (err?.status === 429) {
+            rateLimitRef.current = true;
+            console.warn('[ProjectDetail] Rate limited - stopping automatic retries');
+          }
+          // Only show toast for non-429 errors to avoid spam
+          if (err?.status !== 429) {
+            toastRef.current?.error?.(err?.error || err?.message || 'Failed to load project');
+          }
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     };
 
     if (id) {
       loadProject();
     }
+    
     return () => {
       cancelled = true;
     };
@@ -70,18 +90,37 @@ export const ProjectDetail = memo(() => {
   const handleRetryLoad = useCallback(async () => {
     if (!id) return;
     try {
+      // Reset rate limit flag on manual retry
+      rateLimitRef.current = false;
       setLoading(true);
       setLoadError(null);
+      
+      // Wait a bit before retrying if it was a rate limit error
+      const wasRateLimited = loadError?.status === 429;
+      if (wasRateLimited) {
+        const retryAfter = loadError?.data?.retryAfter || 5;
+        console.log(`[ProjectDetail] Waiting ${retryAfter}s before retry...`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+      }
+      
       const { project: projectData } = await projectApi.getById(id);
       setProject(projectData);
+      setLoading(false);
+      rateLimitRef.current = false; // Reset on success
     } catch (err) {
       console.error('Failed to load project (retry):', err);
       setLoadError(err);
-      toastRef.current?.error?.(err?.error || err?.message || 'Failed to load project');
-    } finally {
       setLoading(false);
+      // Mark rate limit again if still rate limited
+      if (err?.status === 429) {
+        rateLimitRef.current = true;
+      }
+      // Only show toast for non-429 errors
+      if (err?.status !== 429) {
+        toastRef.current?.error?.(err?.error || err?.message || 'Failed to load project');
+      }
     }
-  }, [id]);
+  }, [id, loadError]);
 
   const handleApply = useCallback(async () => {
     if (!isAuthenticated) {
