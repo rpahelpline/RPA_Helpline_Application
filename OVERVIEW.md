@@ -21,7 +21,6 @@ The goal is to be a **single place** for:
 
 - RPA **projects** (client ↔ freelancer)
 - RPA **jobs** (employer ↔ job seeker)
-- RPA **training** (trainer ↔ learners)
 
 ---
 
