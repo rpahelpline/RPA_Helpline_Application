@@ -42,6 +42,7 @@ const RegisterProject = lazyLoad(() => import('../pages/Register/RegisterProject
 const Jobs = lazyLoad(() => import('../pages/Jobs'), 'Jobs');
 const JobDetail = lazyLoad(() => import('../pages/Jobs/JobDetail'), 'JobDetail');
 const PostJob = lazyLoad(() => import('../pages/Jobs/PostJob'), 'PostJob');
+const PublicProfile = lazyLoad(() => import('../pages/Profile/PublicProfile'), 'PublicProfile');
 const NotFound = lazyLoad(() => import('../pages/NotFound'), 'NotFound');
 const GitHubCallback = lazyLoad(() => import('../pages/Auth/GitHubCallback'), 'GitHubCallback');
 const AdminDashboard = lazyLoad(() => import('../pages/Admin/AdminDashboard'), 'AdminDashboard');
@@ -98,6 +99,7 @@ export const AppRoutes = () => {
           <Route path="/projects/:id" element={<RouteWrapper><ProjectDetail /></RouteWrapper>} />
           <Route path="/jobs" element={<RouteWrapper><Jobs /></RouteWrapper>} />
           <Route path="/jobs/:id" element={<RouteWrapper><JobDetail /></RouteWrapper>} />
+          <Route path="/profile/:userId" element={<RouteWrapper><PublicProfile /></RouteWrapper>} />
           <Route path="/how-it-works" element={<RouteWrapper><HowItWorks /></RouteWrapper>} />
           <Route path="/register" element={<RouteWrapper><Register /></RouteWrapper>} />
           

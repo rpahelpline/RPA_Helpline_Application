@@ -311,21 +311,42 @@ router.get('/:id', idValidation, optionalAuth, asyncHandler(async (req, res) => 
       .from('freelancer_profiles')
       .select('*')
       .eq('profile_id', id)
-      .single();
+      .maybeSingle();
+    specializedProfile = data;
+  } else if (profile.user_type === USER_TYPES.JOB_SEEKER) {
+    const { data } = await supabaseAdmin
+      .from('job_seeker_profiles')
+      .select('*')
+      .eq('profile_id', id)
+      .maybeSingle();
     specializedProfile = data;
   } else if (profile.user_type === USER_TYPES.TRAINER) {
     const { data } = await supabaseAdmin
       .from('trainer_profiles')
       .select('*')
       .eq('profile_id', id)
-      .single();
+      .maybeSingle();
     specializedProfile = data;
   } else if (profile.user_type === USER_TYPES.BA_PM) {
     const { data } = await supabaseAdmin
       .from('ba_pm_profiles')
       .select('*')
       .eq('profile_id', id)
-      .single();
+      .maybeSingle();
+    specializedProfile = data;
+  } else if (profile.user_type === USER_TYPES.CLIENT) {
+    const { data } = await supabaseAdmin
+      .from('client_profiles')
+      .select('*')
+      .eq('profile_id', id)
+      .maybeSingle();
+    specializedProfile = data;
+  } else if (profile.user_type === USER_TYPES.EMPLOYER) {
+    const { data } = await supabaseAdmin
+      .from('employer_profiles')
+      .select('*')
+      .eq('profile_id', id)
+      .maybeSingle();
     specializedProfile = data;
   }
 
