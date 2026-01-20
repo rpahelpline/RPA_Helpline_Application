@@ -275,11 +275,11 @@ export const UPLOAD_LIMITS = {
 export const RATE_LIMITS = {
   GENERAL: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100
+    max: 500 // Increased from 100
   },
   AUTH: {
     windowMs: 15 * 60 * 1000,
-    max: 10
+    max: 50 // Increased from 10
   },
   UPLOAD: {
     windowMs: 60 * 60 * 1000, // 1 hour
