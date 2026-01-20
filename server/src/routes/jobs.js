@@ -129,7 +129,7 @@ const convertTechnologiesToUuids = async (technologies) => {
         .select('id')
         .eq('id', trimmedName)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
       
       if (platform) {
         platformUuids.push(trimmedName);
@@ -141,7 +141,7 @@ const convertTechnologiesToUuids = async (technologies) => {
         .select('id')
         .eq('id', trimmedName)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
       
       if (skill) {
         skillUuids.push(trimmedName);
@@ -150,22 +150,31 @@ const convertTechnologiesToUuids = async (technologies) => {
     }
 
     // Try to find as platform first
-    let { data: platform } = await supabaseAdmin
+    let { data: platform, error: platformError } = await supabaseAdmin
       .from('rpa_platforms')
       .select('id')
       .eq('name', trimmedName)
       .eq('is_active', true)
       .limit(1)
-      .single();
+      .maybeSingle();
+
+    if (!platform && platformError && platformError.code !== 'PGRST116') {
+      console.error(`Error looking up platform "${trimmedName}":`, platformError);
+    }
 
     if (!platform) {
-      const { data: platformData } = await supabaseAdmin
+      const { data: platformData, error: platformDataError } = await supabaseAdmin
         .from('rpa_platforms')
         .select('id')
         .ilike('name', trimmedName)
         .eq('is_active', true)
         .limit(1)
-        .single();
+        .maybeSingle();
+      
+      if (platformDataError && platformDataError.code !== 'PGRST116') {
+        console.error(`Error looking up platform "${trimmedName}" (case-insensitive):`, platformDataError);
+      }
+      
       platform = platformData;
     }
 
@@ -175,22 +184,31 @@ const convertTechnologiesToUuids = async (technologies) => {
     }
 
     // Try to find as skill
-    let { data: skill } = await supabaseAdmin
+    let { data: skill, error: skillError } = await supabaseAdmin
       .from('skills')
       .select('id')
       .eq('name', trimmedName)
       .eq('is_active', true)
       .limit(1)
-      .single();
+      .maybeSingle();
+
+    if (!skill && skillError && skillError.code !== 'PGRST116') {
+      console.error(`Error looking up skill "${trimmedName}":`, skillError);
+    }
 
     if (!skill) {
-      const { data: skillData } = await supabaseAdmin
+      const { data: skillData, error: skillDataError } = await supabaseAdmin
         .from('skills')
         .select('id')
         .ilike('name', trimmedName)
         .eq('is_active', true)
         .limit(1)
-        .single();
+        .maybeSingle();
+      
+      if (skillDataError && skillDataError.code !== 'PGRST116') {
+        console.error(`Error looking up skill "${trimmedName}" (case-insensitive):`, skillDataError);
+      }
+      
       skill = skillData;
     }
 
@@ -521,7 +539,16 @@ router.post('/', authenticateToken, requireRole('employer', 'client', 'ba_pm'), 
 
   if (error) {
     console.error('Error creating job:', error);
-    return res.status(500).json({ error: 'Failed to create job posting' });
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint
+    });
+    return res.status(500).json({ 
+      error: 'Failed to create job posting',
+      details: error.message || 'Database error occurred'
+    });
   }
 
   if (!job || !job.id) {
