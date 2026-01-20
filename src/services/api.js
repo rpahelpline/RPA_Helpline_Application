@@ -492,6 +492,50 @@ export const statsApi = {
 };
 
 // =====================
+// ADMIN API
+// =====================
+export const adminApi = {
+  getStats: () => api.get('/admin/stats'),
+  getUsers: (params) => api.get('/admin/users', params),
+  getUserById: (id) => api.get(`/admin/users/${id}`),
+  updateUser: (id, userData) => api.put(`/admin/users/${id}`, userData),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  verifyUser: (id) => api.post(`/admin/users/${id}/verify`),
+  getVerificationRequests: (params) => api.get('/admin/verification-requests', params),
+  rejectVerificationRequest: (id) => api.post(`/admin/verification-requests/${id}/reject`),
+  getJobs: (params) => api.get('/admin/jobs', params),
+  updateJob: (id, jobData) => api.put(`/admin/jobs/${id}`, jobData),
+  deleteJob: (id) => api.delete(`/admin/jobs/${id}`),
+  getProjects: (params) => api.get('/admin/projects', params),
+  updateProject: (id, projectData) => api.put(`/admin/projects/${id}`, projectData),
+  deleteProject: (id) => api.delete(`/admin/projects/${id}`),
+  getPlatforms: () => api.get('/admin/platforms'),
+  createPlatform: (data) => api.post('/admin/platforms', data),
+  updatePlatform: (id, data) => api.put(`/admin/platforms/${id}`, data),
+  deletePlatform: (id) => api.delete(`/admin/platforms/${id}`),
+  getSkills: () => api.get('/admin/skills'),
+  createSkill: (data) => api.post('/admin/skills', data),
+  updateSkill: (id, data) => api.put(`/admin/skills/${id}`, data),
+  deleteSkill: (id) => api.delete(`/admin/skills/${id}`),
+  getTraining: (params) => api.get('/admin/training', params),
+  updateTraining: (id, data) => api.put(`/admin/training/${id}`, data),
+  deleteTraining: (id) => api.delete(`/admin/training/${id}`),
+  getApplications: (params) => api.get('/admin/applications', params),
+  updateApplication: (id, data) => api.put(`/admin/applications/${id}`, data),
+  deleteApplication: (id) => api.delete(`/admin/applications/${id}`),
+  getMessages: (params) => api.get('/admin/messages', params),
+  flagMessage: (id) => api.put(`/admin/messages/${id}/flag`),
+  deleteMessage: (id) => api.delete(`/admin/messages/${id}`),
+  getCertifications: () => api.get('/admin/certifications'),
+  createCertification: (data) => api.post('/admin/certifications', data),
+  updateCertification: (id, data) => api.put(`/admin/certifications/${id}`, data),
+  deleteCertification: (id) => api.delete(`/admin/certifications/${id}`),
+  broadcastNotification: (data) => api.post('/admin/notifications/broadcast', data),
+  getNotifications: (params) => api.get('/admin/notifications', params),
+  getAnalytics: (params) => api.get('/admin/analytics', params),
+};
+
+// =====================
 // HEALTH CHECK
 // =====================
 export const healthApi = {

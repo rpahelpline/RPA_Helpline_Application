@@ -2,6 +2,7 @@ import { lazy, Suspense, memo } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout';
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
+import { AdminProtectedRoute } from '../components/common/AdminProtectedRoute';
 import { PageLoader } from '../components/common/LoadingSpinner';
 import { PageTransition } from '../components/common/PageTransition';
 import { ScrollToTop } from '../components/common/SmoothScroll';
@@ -41,6 +42,7 @@ const RegisterProject = lazyLoad(() => import('../pages/Register/RegisterProject
 const Jobs = lazyLoad(() => import('../pages/Jobs'), 'Jobs');
 const NotFound = lazyLoad(() => import('../pages/NotFound'), 'NotFound');
 const GitHubCallback = lazyLoad(() => import('../pages/Auth/GitHubCallback'), 'GitHubCallback');
+const AdminDashboard = lazyLoad(() => import('../pages/Admin/AdminDashboard'), 'AdminDashboard');
 
 // Smooth loading fallback
 const SmoothLoader = memo(() => (
@@ -113,11 +115,23 @@ export const AppRoutes = () => {
           <Route
             path="/register/project"
             element={
-              <ProtectedRoute allowedRoles={['client']}>
+              <ProtectedRoute allowedRoles={['client', 'employer']}>
                 <RouteWrapper>
                   <RegisterProject />
                 </RouteWrapper>
               </ProtectedRoute>
+            }
+          />
+          
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <AdminProtectedRoute>
+                <RouteWrapper withLayout={false}>
+                  <AdminDashboard />
+                </RouteWrapper>
+              </AdminProtectedRoute>
             }
           />
           
