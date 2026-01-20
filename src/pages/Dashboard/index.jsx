@@ -151,13 +151,19 @@ const SidebarNav = memo(({ role, currentSection, setCurrentSection, unreadMessag
         { id: 'overview', label: 'Dashboard', icon: BarChart3 },
         { id: 'my-jobs', label: 'My Jobs', icon: Briefcase },
         { id: 'job-applications', label: 'Job Applications', icon: FileText },
+        { id: 'my-projects', label: 'My Projects', icon: Target },
+        { id: 'project-applications', label: 'Project Applications', icon: FileText },
         { id: 'post-job', label: 'Post Job', icon: Plus, route: '/post-job' },
+        { id: 'post-project', label: 'Post Project', icon: Plus, route: '/register/project' },
       ],
       client: [
         { id: 'overview', label: 'Dashboard', icon: BarChart3 },
-        { id: 'my-projects', label: 'My Projects', icon: Briefcase },
+        { id: 'my-projects', label: 'My Projects', icon: Target },
         { id: 'project-applications', label: 'Project Applications', icon: FileText },
+        { id: 'my-jobs', label: 'My Jobs', icon: Briefcase },
+        { id: 'job-applications', label: 'Job Applications', icon: FileText },
         { id: 'post-project', label: 'Post Project', icon: Plus, route: '/register/project' },
+        { id: 'post-job', label: 'Post Job', icon: Plus, route: '/post-job' },
       ],
 
       // APPLYING ROLES - They browse and apply to jobs/projects
@@ -529,13 +535,19 @@ export const Dashboard = memo(() => {
       // HIRING ROLES - Quick actions for posting and managing
       employer: [
         { title: 'POST JOB', description: 'Create a new job listing', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/post-job' },
+        { title: 'POST PROJECT', description: 'Create a new RPA project', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/register/project' },
         { title: 'MY JOBS', description: 'Manage your posted jobs', icon: Briefcase, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-jobs' },
+        { title: 'MY PROJECTS', description: 'Manage your posted projects', icon: Target, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-projects' },
         { title: 'JOB APPLICATIONS', description: 'Review received applications', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'job-applications' },
+        { title: 'PROJECT APPLICATIONS', description: 'Review received proposals', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'project-applications' },
       ],
       client: [
         { title: 'POST PROJECT', description: 'Create a new RPA project', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/register/project' },
-        { title: 'MY PROJECTS', description: 'Manage your posted projects', icon: Briefcase, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-projects' },
+        { title: 'POST JOB', description: 'Create a new job listing', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/post-job' },
+        { title: 'MY PROJECTS', description: 'Manage your posted projects', icon: Target, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-projects' },
+        { title: 'MY JOBS', description: 'Manage your posted jobs', icon: Briefcase, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-jobs' },
         { title: 'PROJECT APPLICATIONS', description: 'Review received proposals', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'project-applications' },
+        { title: 'JOB APPLICATIONS', description: 'Review received applications', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'job-applications' },
       ],
 
       // APPLYING ROLES - Quick actions for finding work
@@ -615,11 +627,19 @@ export const Dashboard = memo(() => {
         return <EmployerDashboard initialTab="jobs" />;
       case 'job-applications':
         return <EmployerDashboard initialTab="applications" />;
+      case 'my-projects':
+        return <EmployerDashboard initialTab="projects" />;
+      case 'project-applications':
+        return <EmployerDashboard initialTab="applications" />;
 
       // CLIENT SECTIONS
       case 'my-projects':
         return <ClientDashboard initialTab="projects" />;
       case 'project-applications':
+        return <ClientDashboard initialTab="applications" />;
+      case 'my-jobs':
+        return <ClientDashboard initialTab="jobs" />;
+      case 'job-applications':
         return <ClientDashboard initialTab="applications" />;
 
       // TRAINER SECTIONS

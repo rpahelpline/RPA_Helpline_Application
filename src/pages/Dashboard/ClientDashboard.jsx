@@ -7,7 +7,7 @@ import {
   CheckCircle, Calendar, Eye, Users, Target, Code, Plus, MessageSquare,
   FileText, Award, TrendingUp, ExternalLink, BarChart3, Filter
 } from 'lucide-react';
-import { projectApi, freelancerApi } from '../../services/api';
+import { projectApi, jobApi, freelancerApi } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
@@ -149,6 +149,7 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [projects, setProjects] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
@@ -209,22 +210,43 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
       if (activeTab === 'projects') {
         const response = await projectApi.getMyProjects({ limit: 50 });
         setProjects(response.projects || []);
+      } else if (activeTab === 'jobs') {
+        const response = await jobApi.getMyPostings({ limit: 50 });
+        setJobs(response.jobs || []);
       } else if (activeTab === 'applications') {
-        // Load all applications across all projects
-        const projectsResponse = await projectApi.getMyProjects({ limit: 100 });
+        // Load all applications across all projects AND jobs
         const allApplications = [];
+        
+        // Load project applications
+        const projectsResponse = await projectApi.getMyProjects({ limit: 100 });
         for (const project of projectsResponse.projects || []) {
           try {
             const appsResponse = await projectApi.getApplications(project.id);
             if (appsResponse.applications) {
               appsResponse.applications.forEach(app => {
-                allApplications.push({ ...app, project_title: project.title, project_id: project.id });
+                allApplications.push({ ...app, project_title: project.title, project_id: project.id, type: 'project' });
               });
             }
           } catch (err) {
             console.error(`Failed to load applications for project ${project.id}:`, err);
           }
         }
+        
+        // Load job applications
+        const jobsResponse = await jobApi.getMyPostings({ limit: 100 });
+        for (const job of jobsResponse.jobs || []) {
+          try {
+            const appsResponse = await jobApi.getApplications(job.id);
+            if (appsResponse.applications) {
+              appsResponse.applications.forEach(app => {
+                allApplications.push({ ...app, job_title: job.title, job_id: job.id, type: 'job' });
+              });
+            }
+          } catch (err) {
+            console.error(`Failed to load applications for job ${job.id}:`, err);
+          }
+        }
+        
         setApplications(allApplications);
       } else if (activeTab === 'analytics') {
         // Load analytics data
@@ -265,7 +287,8 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
   };
 
   const tabs = [
-    { id: 'projects', label: 'My Projects', icon: Briefcase },
+    { id: 'projects', label: 'My Projects', icon: Target },
+    { id: 'jobs', label: 'My Jobs', icon: Briefcase },
     { id: 'applications', label: 'Applications', icon: FileText },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
@@ -354,6 +377,92 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
             </div>
           )}
 
+          {activeTab === 'jobs' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-display font-bold text-foreground tracking-wider flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-primary" />
+                  MY JOBS
+                </h2>
+                <Link to="/post-job">
+                  <Button className="bg-primary hover:bg-primary/90 font-mono text-xs tracking-wider">
+                    <Plus className="w-4 h-4 mr-1" />
+                    POST JOB
+                  </Button>
+                </Link>
+              </div>
+
+              {jobs.length > 0 ? (
+                <div className="grid lg:grid-cols-3 gap-4">
+                  {jobs.map((job) => (
+                    <Card key={job.id} className="tech-panel border-border bg-card/50 hover-lift transition-all duration-300 group">
+                      <CardContent className="p-3 md:p-5">
+                        <div className="flex items-start justify-between gap-3 md:gap-4 mb-3 md:mb-4">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-display font-bold text-foreground tracking-wider mb-1 text-sm md:text-base group-hover:text-primary transition-colors truncate">
+                              {job.title}
+                            </h4>
+                            <p className="text-[10px] md:text-xs text-muted-foreground font-mono truncate">
+                              {job.salary_min && job.salary_max
+                                ? `₹${job.salary_min.toLocaleString()} - ₹${job.salary_max.toLocaleString()}`
+                                : job.salary_min
+                                  ? `₹${job.salary_min.toLocaleString()}+`
+                                  : 'Not specified'} • {job.employment_type?.replace('_', ' ') || 'Full-time'}
+                            </p>
+                          </div>
+                          <span className={`px-2 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-mono flex-shrink-0 ${job.status === 'open' ? 'bg-green-500/20 text-green-500' :
+                            job.status === 'filled' ? 'bg-blue-500/20 text-blue-500' :
+                              'bg-muted text-muted-foreground'
+                            }`}>
+                            {job.status?.toUpperCase() || 'ACTIVE'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs text-muted-foreground mb-3 md:mb-4">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {job.application_count || 0} applicants
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" />
+                            {job.views || 0} views
+                          </span>
+                          <span className="hidden sm:flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Posted {job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Recently'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-3 md:pt-4 border-t border-border/50">
+                          <span className="text-[10px] md:text-xs text-muted-foreground truncate mr-2">{job.location || 'Remote'}</span>
+                          <Link to={`/jobs/${job.id}`}>
+                            <Button variant="outline" size="sm" className="font-mono text-xs tracking-wider min-h-[36px]">
+                              MANAGE
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="tech-panel border-border">
+                  <CardContent className="p-12 text-center">
+                    <Briefcase className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-display font-bold text-foreground mb-2">No Jobs Yet</h3>
+                    <p className="text-muted-foreground mb-6">Start by posting your first job</p>
+                    <Link to="/post-job">
+                      <Button className="bg-primary hover:bg-primary/90 font-mono text-xs tracking-wider">
+                        <Plus className="w-4 h-4 mr-2" />
+                        POST YOUR FIRST JOB
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
           {activeTab === 'applications' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -384,7 +493,14 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
                                 <h4 className="font-display font-bold text-foreground">
                                   {(application.freelancer || application.applicant)?.full_name || 'Applicant'}
                                 </h4>
-                                <p className="text-sm text-muted-foreground">{application.project_title}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {application.type === 'project' ? application.project_title : application.job_title}
+                                </p>
+                                {application.type && (
+                                  <span className="text-xs text-muted-foreground/70">
+                                    {application.type === 'project' ? 'Project Application' : 'Job Application'}
+                                  </span>
+                                )}
                               </div>
                             </div>
                             {application.cover_letter && (
@@ -393,11 +509,14 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
                               </p>
                             )}
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              {application.proposed_rate && (
+                              {application.type === 'project' && application.proposed_rate && (
                                 <span>Rate: ₹{application.proposed_rate.toLocaleString()}/hr</span>
                               )}
-                              {application.proposed_duration && (
+                              {application.type === 'project' && application.proposed_duration && (
                                 <span>Duration: {application.proposed_duration}</span>
+                              )}
+                              {application.type === 'job' && application.expected_salary && (
+                                <span>Expected: ₹{application.expected_salary.toLocaleString()}/year</span>
                               )}
                               <span>Applied: {new Date(application.created_at).toLocaleDateString()}</span>
                             </div>
@@ -405,8 +524,9 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
                           <div className="flex flex-col items-end gap-2">
                             <span className={`px-2 py-1 rounded-full text-xs font-mono ${application.status === 'accepted' ? 'bg-green-500/20 text-green-500' :
                               application.status === 'rejected' ? 'bg-red-500/20 text-red-500' :
-                                application.status === 'shortlisted' ? 'bg-blue-500/20 text-blue-500' :
-                                  'bg-yellow-500/20 text-yellow-500'
+                                application.status === 'shortlisted' ? 'bg-purple-500/20 text-purple-500' :
+                                  application.status === 'interview' || application.status === 'phone_screen' ? 'bg-blue-500/20 text-blue-500' :
+                                    'bg-yellow-500/20 text-yellow-500'
                               }`}>
                               {application.status?.toUpperCase() || 'PENDING'}
                             </span>
@@ -422,10 +542,10 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => navigate(`/projects/${application.project_id}`)}
+                                onClick={() => navigate(application.type === 'project' ? `/projects/${application.project_id}` : `/jobs/${application.job_id}`)}
                                 className="font-mono text-xs"
                               >
-                                VIEW PROJECT
+                                {application.type === 'project' ? 'VIEW PROJECT' : 'VIEW JOB'}
                               </Button>
                             </div>
                           </div>
