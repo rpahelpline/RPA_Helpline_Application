@@ -23,6 +23,8 @@ export const ProjectDetail = memo(() => {
   const toast = useToast();
   const toastRef = useRef(toast);
   const rateLimitRef = useRef(false);
+  const hasLoadedRef = useRef(false);
+  const loadingTimeoutRef = useRef(null);
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -42,9 +44,50 @@ export const ProjectDetail = memo(() => {
   useEffect(() => {
     let cancelled = false;
 
-    // Skip if we've hit rate limit (prevents retry loops)
+    // Clear any existing timeout
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+
+    // Safety timeout: Always stop loading after 15 seconds max
+    loadingTimeoutRef.current = setTimeout(() => {
+      if (!cancelled) {
+        console.warn('[ProjectDetail] Loading timeout - forcing stop');
+        setLoading(false);
+        setLoadError(prev => prev || {
+          status: 0,
+          error: 'Request timeout',
+          message: 'The request took too long. Please try again.'
+        });
+      }
+    }, 15000);
+
+    // Prevent multiple loads for the same ID if already loaded successfully
+    if (hasLoadedRef.current && id === project?.id && !loadError) {
+      setLoading(false);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    // If we're rate limited, ensure we show error state (not loading)
     if (rateLimitRef.current) {
-      console.warn('[ProjectDetail] Skipping load - rate limited, use retry button');
+      console.warn('[ProjectDetail] Rate limited - showing error state, not loading');
+      setLoading(false);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      // If we don't have an error object yet, create a proper ApiError-like object
+      setLoadError(prev => prev || {
+        status: 429,
+        error: 'Too many requests',
+        message: 'Rate limited - too many requests. Please wait and try again.',
+        data: { retryAfter: 60 }
+      });
       return;
     }
 
@@ -53,18 +96,29 @@ export const ProjectDetail = memo(() => {
         if (!cancelled) {
           setLoading(true);
           setLoadError(null);
+          rateLimitRef.current = false; // Reset flag when starting new load
         }
         const { project: projectData } = await projectApi.getById(id);
         if (!cancelled) {
           setProject(projectData);
           setLoading(false);
           rateLimitRef.current = false; // Reset on success
+          hasLoadedRef.current = true;
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+            loadingTimeoutRef.current = null;
+          }
         }
       } catch (err) {
         console.error('Failed to load project:', err);
         if (!cancelled) {
           setLoadError(err);
-          setLoading(false);
+          setLoading(false); // CRITICAL: Always stop loading on error
+          hasLoadedRef.current = false; // Allow retry
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+            loadingTimeoutRef.current = null;
+          }
           // Mark rate limit so we don't retry automatically
           if (err?.status === 429) {
             rateLimitRef.current = true;
@@ -79,19 +133,37 @@ export const ProjectDetail = memo(() => {
     };
 
     if (id) {
+      // Reset hasLoaded when ID changes
+      if (project?.id !== id) {
+        hasLoadedRef.current = false;
+        rateLimitRef.current = false;
+      }
       loadProject();
+    } else {
+      // No ID - stop loading
+      setLoading(false);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     }
     
     return () => {
       cancelled = true;
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     };
-  }, [id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]); // Only depend on id - loading/loadError would cause loops
 
   const handleRetryLoad = useCallback(async () => {
     if (!id) return;
     try {
-      // Reset rate limit flag on manual retry
+      // Reset flags on manual retry
       rateLimitRef.current = false;
+      hasLoadedRef.current = false;
       setLoading(true);
       setLoadError(null);
       
@@ -107,10 +179,12 @@ export const ProjectDetail = memo(() => {
       setProject(projectData);
       setLoading(false);
       rateLimitRef.current = false; // Reset on success
+      hasLoadedRef.current = true;
     } catch (err) {
       console.error('Failed to load project (retry):', err);
       setLoadError(err);
-      setLoading(false);
+      setLoading(false); // CRITICAL: Always stop loading
+      hasLoadedRef.current = false;
       // Mark rate limit again if still rate limited
       if (err?.status === 429) {
         rateLimitRef.current = true;
