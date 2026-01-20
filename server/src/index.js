@@ -20,6 +20,7 @@ import notificationRoutes from './routes/notifications.js';
 import messageRoutes from './routes/messages.js';
 import uploadRoutes from './routes/upload.js';
 import statsRoutes from './routes/stats.js';
+import adminRoutes from './routes/admin.js';
 
 // Middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -169,6 +170,9 @@ app.use('/api/upload', uploadRoutes);
 
 // Stats (dashboard statistics, activity, recommendations)
 app.use('/api/stats', statsRoutes);
+
+// Admin routes (admin dashboard, user management, etc.)
+app.use('/api/admin', adminRoutes);
 
 // Error handling for API routes (before SPA fallback, only for /api routes)
 app.use('/api', notFoundHandler);

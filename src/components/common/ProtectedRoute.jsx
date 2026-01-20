@@ -22,6 +22,7 @@ export const ProtectedRoute = ({ children, allowedRoles = null }) => {
 
   // Check role-based access
   if (allowedRoles && !allowedRoles.includes(role)) {
+    console.warn(`[ProtectedRoute] Access denied. User role: "${role}", Allowed roles:`, allowedRoles);
     return <Navigate to="/dashboard" replace />;
   }
 

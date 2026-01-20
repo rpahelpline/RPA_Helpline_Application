@@ -46,6 +46,7 @@ export const RegisterProject = memo(() => {
     }
     if (role && role !== 'client' && role !== 'employer' && role !== 'ba_pm') {
       hasCheckedAuth.current = true;
+      console.warn(`[RegisterProject] Role check failed. Current role: "${role}"`);
       toast.error('Only clients, employers, and BA/PMs can post projects. Switch to a hiring role to post.');
       navigate('/projects');
     }
