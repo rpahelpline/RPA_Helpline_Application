@@ -42,6 +42,11 @@ export const ProjectDetail = memo(() => {
   }, [toast]);
 
   useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     // Clear any existing timeout
@@ -56,14 +61,15 @@ export const ProjectDetail = memo(() => {
       hasLoadedRef.current = false;
       rateLimitRef.current = false;
       setLoadError(null);
-      // Clear project if ID changed
-      if (currentProjectId && currentProjectId !== id) {
-        setProject(null);
-      }
     }
 
-    // Skip if already loaded the same project successfully
-    if (hasLoadedRef.current && currentProjectId === id && !loadError && project) {
+    // Only skip if we've successfully loaded THIS specific project
+    if (hasLoadedRef.current && currentProjectId === id && project && !loadError) {
+      return;
+    }
+
+    // Don't auto-retry if we're rate limited (manual retry only)
+    if (rateLimitRef.current && loadError?.status === 429 && !hasLoadedRef.current) {
       setLoading(false);
       return;
     }
@@ -80,12 +86,6 @@ export const ProjectDetail = memo(() => {
         });
       }
     }, 15000);
-
-    // Skip if rate limited (but allow manual retry via handleRetryLoad)
-    if (rateLimitRef.current && loadError?.status === 429) {
-      setLoading(false);
-      return;
-    }
 
     const loadProject = async () => {
       if (!cancelled) {
@@ -183,7 +183,11 @@ export const ProjectDetail = memo(() => {
         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
       }
       
-      const { project: projectData } = await projectApi.getById(id);
+      const response = await projectApi.getById(id);
+      const projectData = response?.project || response;
+      if (!projectData || !projectData.id) {
+        throw new Error('Invalid project data received');
+      }
       setProject(projectData);
       setLoading(false);
       rateLimitRef.current = false; // Reset on success
@@ -232,8 +236,11 @@ export const ProjectDetail = memo(() => {
       setApplicationData({ cover_letter: '', proposed_rate: '', estimated_duration: '' });
       setShowApplicationForm(false);
       // Reload project to update application count and has_applied flag
-      const { project: updatedProject } = await projectApi.getById(id);
-      setProject(updatedProject);
+      const response = await projectApi.getById(id);
+      const updatedProject = response?.project || response;
+      if (updatedProject && updatedProject.id) {
+        setProject(updatedProject);
+      }
     } catch (err) {
       toast.error(err.error || 'Failed to submit application');
     } finally {
@@ -300,16 +307,24 @@ export const ProjectDetail = memo(() => {
     );
   }
 
-  if (!project) {
+  if (!project && !loading && !loadError) {
     return (
       <div className="min-h-screen pt-20">
         <Container className="py-12">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-muted-foreground">Project not found</p>
+            <Button onClick={handleRetryLoad} className="mt-4 font-mono text-xs">
+              RETRY
+            </Button>
           </div>
         </Container>
       </div>
     );
+  }
+
+  if (!project) {
+    // Still loading or in error state - already handled above
+    return null;
   }
 
   const getUrgencyColor = (urgency) => {
