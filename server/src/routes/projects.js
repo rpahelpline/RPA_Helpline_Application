@@ -716,7 +716,7 @@ router.delete('/:id', authenticateToken, idValidation, asyncHandler(async (req, 
 }));
 
 // Apply to project
-router.post('/:id/apply', authenticateToken, requireRole('freelancer', 'ba_pm', 'trainer'), idValidation, asyncHandler(async (req, res) => {
+router.post('/:id/apply', authenticateToken, requireRole('freelancer', 'ba_pm', 'trainer', 'job_seeker', 'jobseeker', 'developer'), idValidation, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { cover_letter, proposed_rate, estimated_duration } = req.body;
 
