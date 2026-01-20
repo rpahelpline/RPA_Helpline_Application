@@ -431,16 +431,21 @@ router.get('/:id', idValidation, asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Job not found' });
   }
 
-  // Get company name from employer_profiles if it exists
+  // Get company name from employer_profiles if it exists (non-blocking)
   if (job.employer_id) {
-    const { data: employerProfile } = await supabaseAdmin
-      .from('employer_profiles')
-      .select('company_name')
-      .eq('profile_id', job.employer_id)
-      .single();
-    
-    if (employerProfile && job.employer) {
-      job.employer.company_name = employerProfile.company_name;
+    try {
+      const { data: employerProfile } = await supabaseAdmin
+        .from('employer_profiles')
+        .select('company_name')
+        .eq('profile_id', job.employer_id)
+        .maybeSingle();
+      
+      if (employerProfile && job.employer) {
+        job.employer.company_name = employerProfile.company_name;
+      }
+    } catch (profileError) {
+      // Non-critical error, continue without company name
+      console.warn(`Could not fetch employer profile for ${job.employer_id}:`, profileError);
     }
   }
 

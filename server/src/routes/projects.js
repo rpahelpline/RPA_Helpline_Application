@@ -405,16 +405,21 @@ router.get('/:id', idValidation, optionalAuth, asyncHandler(async (req, res) => 
     return res.status(404).json({ error: 'Project not found' });
   }
 
-  // Get company name from client_profiles if available
+  // Get company name from client_profiles if available (non-blocking)
   if (project.client_id) {
-    const { data: clientProfile } = await supabaseAdmin
-      .from('client_profiles')
-      .select('company_name')
-      .eq('profile_id', project.client_id)
-      .single();
-    
-    if (clientProfile && project.client) {
-      project.client.company_name = clientProfile.company_name;
+    try {
+      const { data: clientProfile } = await supabaseAdmin
+        .from('client_profiles')
+        .select('company_name')
+        .eq('profile_id', project.client_id)
+        .maybeSingle();
+      
+      if (clientProfile && project.client) {
+        project.client.company_name = clientProfile.company_name;
+      }
+    } catch (profileError) {
+      // Non-critical error, continue without company name
+      console.warn(`Could not fetch client profile for ${project.client_id}:`, profileError);
     }
   }
 
