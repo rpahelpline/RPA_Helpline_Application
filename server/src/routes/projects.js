@@ -847,6 +847,15 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('c
   };
 
   if (status) {
+    // Validate status against allowed values for project_applications
+    const allowedStatuses = ['pending', 'viewed', 'shortlisted', 'interview', 'accepted', 'rejected', 'withdrawn'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ 
+        error: 'Invalid status',
+        message: `Status "${status}" is not valid for project applications. Allowed values: ${allowedStatuses.join(', ')}`
+      });
+    }
+    
     updateData.status = status;
     if (status === 'viewed') {
       updateData.viewed_at = new Date().toISOString();
@@ -885,7 +894,16 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('c
 
   if (updateError) {
     console.error('Error updating application:', updateError);
-    return res.status(500).json({ error: 'Failed to update application' });
+    console.error('Update error details:', {
+      message: updateError.message,
+      code: updateError.code,
+      details: updateError.details,
+      hint: updateError.hint
+    });
+    return res.status(500).json({ 
+      error: 'Failed to update application',
+      details: updateError.message || 'Database error occurred'
+    });
   }
 
   // Notify applicant about status change

@@ -872,11 +872,29 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('e
   };
 
   if (status) {
-    updateData.status = status;
-    if (status === 'reviewed' || status === 'viewed') {
+    // Map frontend statuses to database statuses
+    // job_applications doesn't have 'shortlisted', map it to 'reviewed'
+    let dbStatus = status;
+    if (status === 'shortlisted') {
+      dbStatus = 'reviewed';
+    }
+    
+    // Validate status against allowed values
+    const allowedStatuses = ['pending', 'reviewed', 'phone_screen', 'interview', 'technical_round', 'offer', 'accepted', 'rejected', 'withdrawn'];
+    if (!allowedStatuses.includes(dbStatus)) {
+      return res.status(400).json({ 
+        error: 'Invalid status',
+        message: `Status "${status}" is not valid for job applications. Allowed values: ${allowedStatuses.join(', ')}`
+      });
+    }
+    
+    updateData.status = dbStatus;
+    
+    if (dbStatus === 'reviewed' || dbStatus === 'viewed') {
       updateData.viewed_at = new Date().toISOString();
-    } else if (status === 'rejected') {
-      updateData.rejected_at = new Date().toISOString();
+    } else if (dbStatus === 'rejected') {
+      // Note: job_applications table doesn't have rejected_at column
+      // Only set rejection_reason if provided
       if (rejected_reason) {
         updateData.rejection_reason = rejected_reason;
       }
@@ -887,9 +905,8 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('e
     updateData.employer_notes = notes;
   }
 
-  if (interview_scheduled_at) {
-    updateData.interview_scheduled_at = interview_scheduled_at;
-  }
+  // Note: job_applications table doesn't have interview_scheduled_at column
+  // This field is not available in the schema, so we skip it
 
   const { data: updatedApplication, error: updateError } = await supabaseAdmin
     .from('job_applications')
@@ -909,7 +926,16 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('e
 
   if (updateError) {
     console.error('Error updating application:', updateError);
-    return res.status(500).json({ error: 'Failed to update application' });
+    console.error('Update error details:', {
+      message: updateError.message,
+      code: updateError.code,
+      details: updateError.details,
+      hint: updateError.hint
+    });
+    return res.status(500).json({ 
+      error: 'Failed to update application',
+      details: updateError.message || 'Database error occurred'
+    });
   }
 
   // Notify applicant about status change
