@@ -415,7 +415,7 @@ router.get('/me/postings', authenticateToken, requireRole('employer', 'client'),
 }));
 
 // Get job by ID
-router.get('/:id', idValidation, asyncHandler(async (req, res) => {
+router.get('/:id', idValidation, optionalAuth, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const { data: job, error } = await supabaseAdmin
@@ -427,7 +427,12 @@ router.get('/:id', idValidation, asyncHandler(async (req, res) => {
     .eq('id', id)
     .single();
 
-  if (error || !job) {
+  if (error) {
+    console.error('Error fetching job:', error);
+    return res.status(404).json({ error: 'Job not found' });
+  }
+
+  if (!job) {
     return res.status(404).json({ error: 'Job not found' });
   }
 
@@ -457,7 +462,41 @@ router.get('/:id', idValidation, asyncHandler(async (req, res) => {
 
   job.application_count = count || 0;
 
-  res.json({ job: await transformJob(job) });
+  // Check if current authenticated user has already applied
+  if (req.userId) {
+    const { data: existingApp } = await supabaseAdmin
+      .from('job_applications')
+      .select('id')
+      .eq('job_id', id)
+      .eq('applicant_id', req.userId)
+      .maybeSingle();
+
+    job.has_applied = !!existingApp;
+  }
+
+  // If user is the job owner, include applications
+  if (req.userId && job.employer_id === req.userId) {
+    const { data: applications } = await supabaseAdmin
+      .from('job_applications')
+      .select(`
+        *,
+        applicant:profiles!job_applications_applicant_id_fkey(id, full_name, avatar_url)
+      `)
+      .eq('job_id', id)
+      .order('created_at', { ascending: false });
+
+    job.applications = applications || [];
+  }
+
+  // Transform job to convert UUIDs to names
+  try {
+    const transformedJob = await transformJob(job);
+    res.json({ job: transformedJob });
+  } catch (transformError) {
+    console.error('Error transforming job:', transformError);
+    // Return job without transformation if transform fails
+    res.json({ job });
+  }
 }));
 
 // Create job posting

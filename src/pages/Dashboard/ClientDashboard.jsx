@@ -492,11 +492,6 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
               <Users className="w-5 h-5 text-accent" />
               RECOMMENDED TALENT
             </h2>
-            <Link to="/talent">
-              <Button variant="ghost" className="font-mono text-xs tracking-wider text-secondary">
-                BROWSE ALL <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
-            </Link>
           </div>
 
           {talentLoading ? (
@@ -514,9 +509,6 @@ export const ClientDashboard = memo(({ initialTab = 'projects' }) => {
               <CardContent className="p-8 text-center">
                 <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">No freelancers available at the moment</p>
-                <Link to="/talent">
-                  <Button className="font-mono text-xs">BROWSE ALL TALENT</Button>
-                </Link>
               </CardContent>
             </Card>
           )}

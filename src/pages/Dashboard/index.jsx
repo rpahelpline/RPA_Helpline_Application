@@ -152,14 +152,12 @@ const SidebarNav = memo(({ role, currentSection, setCurrentSection, unreadMessag
         { id: 'my-jobs', label: 'My Jobs', icon: Briefcase },
         { id: 'job-applications', label: 'Job Applications', icon: FileText },
         { id: 'post-job', label: 'Post Job', icon: Plus, route: '/post-job' },
-        { id: 'talent', label: 'Find Talent', icon: Users, route: '/talent' },
       ],
       client: [
         { id: 'overview', label: 'Dashboard', icon: BarChart3 },
         { id: 'my-projects', label: 'My Projects', icon: Briefcase },
         { id: 'project-applications', label: 'Project Applications', icon: FileText },
         { id: 'post-project', label: 'Post Project', icon: Plus, route: '/register/project' },
-        { id: 'talent', label: 'Find Talent', icon: Users, route: '/talent' },
       ],
 
       // APPLYING ROLES - They browse and apply to jobs/projects

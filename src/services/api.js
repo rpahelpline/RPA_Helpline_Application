@@ -400,6 +400,7 @@ export const jobApi = {
   getMyPostings: (params) => api.get('/jobs/me/postings', params),
   getApplications: (id, params) => api.get(`/jobs/${id}/applications`, params),
   getApplicationStats: (id) => api.get(`/jobs/${id}/applications/stats`),
+  updateApplicationStatus: (jobId, applicationId, statusData) => api.put(`/jobs/${jobId}/applications/${applicationId}`, statusData),
 };
 
 // =====================
