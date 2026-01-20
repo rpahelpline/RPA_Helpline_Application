@@ -205,6 +205,7 @@ const SidebarNav = memo(({ role, currentSection, setCurrentSection, unreadMessag
   const handleNavClick = (item) => {
     if (item.route) {
       navigate(item.route);
+      // Don't set current section for external routes
     } else if (item.section) {
       setCurrentSection(item.section);
     } else {

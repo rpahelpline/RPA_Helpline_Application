@@ -40,6 +40,7 @@ const Dashboard = lazyLoad(() => import('../pages/Dashboard'), 'Dashboard');
 const Register = lazyLoad(() => import('../pages/Register'), 'Register');
 const RegisterProject = lazyLoad(() => import('../pages/Register/RegisterProject'), 'RegisterProject');
 const Jobs = lazyLoad(() => import('../pages/Jobs'), 'Jobs');
+const PostJob = lazyLoad(() => import('../pages/Jobs/PostJob'), 'PostJob');
 const NotFound = lazyLoad(() => import('../pages/NotFound'), 'NotFound');
 const GitHubCallback = lazyLoad(() => import('../pages/Auth/GitHubCallback'), 'GitHubCallback');
 const AdminDashboard = lazyLoad(() => import('../pages/Admin/AdminDashboard'), 'AdminDashboard');
@@ -118,6 +119,16 @@ export const AppRoutes = () => {
               <ProtectedRoute allowedRoles={['client', 'employer']}>
                 <RouteWrapper>
                   <RegisterProject />
+                </RouteWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/post-job"
+            element={
+              <ProtectedRoute allowedRoles={['employer', 'client']}>
+                <RouteWrapper>
+                  <PostJob />
                 </RouteWrapper>
               </ProtectedRoute>
             }
