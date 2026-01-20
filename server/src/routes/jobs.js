@@ -530,7 +530,7 @@ router.post('/', authenticateToken, requireRole('employer', 'client', 'ba_pm'), 
       .from('employer_profiles')
       .select('company_name')
       .eq('profile_id', job.employer_id)
-      .single();
+      .maybeSingle();
     
     if (employerProfile && job.employer) {
       job.employer.company_name = employerProfile.company_name;

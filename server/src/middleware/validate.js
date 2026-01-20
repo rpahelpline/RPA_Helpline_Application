@@ -74,7 +74,7 @@ export const projectValidation = [
     .withMessage('Maximum budget must be a positive number'),
   body('urgency')
     .optional()
-    .isIn(['low', 'medium', 'high', 'critical'])
+    .isIn(['low', 'medium', 'high', 'critical', 'normal', 'urgent'])
     .withMessage('Invalid urgency level'),
   body('technologies')
     .optional()

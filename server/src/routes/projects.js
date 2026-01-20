@@ -470,11 +470,22 @@ router.post('/', authenticateToken, requireRole('client', 'employer', 'ba_pm'), 
     description, 
     budget_min, 
     budget_max, 
-    urgency = 'medium',
+    urgency: rawUrgency,
     technologies = [],
     deadline,
     requirements
   } = req.body;
+
+  // Map frontend urgency values to database values
+  // Frontend: 'low', 'medium', 'high', 'critical'
+  // Database: 'low', 'normal', 'high', 'urgent'
+  const urgencyMap = {
+    'low': 'low',
+    'medium': 'normal',
+    'high': 'high',
+    'critical': 'urgent'
+  };
+  const urgency = urgencyMap[rawUrgency] || 'normal';
 
   // Combine description and requirements if requirements provided
   let fullDescription = description || '';
@@ -507,16 +518,21 @@ router.post('/', authenticateToken, requireRole('client', 'employer', 'ba_pm'), 
     `)
     .single();
 
-  // Get company name from client_profiles if available
+  // Get company name from client_profiles if available (non-blocking)
   if (project && project.client_id) {
-    const { data: clientProfile } = await supabaseAdmin
-      .from('client_profiles')
-      .select('company_name')
-      .eq('profile_id', project.client_id)
-      .single();
-    
-    if (clientProfile && project.client) {
-      project.client.company_name = clientProfile.company_name;
+    try {
+      const { data: clientProfile } = await supabaseAdmin
+        .from('client_profiles')
+        .select('company_name')
+        .eq('profile_id', project.client_id)
+        .maybeSingle();
+      
+      if (clientProfile && project.client) {
+        project.client.company_name = clientProfile.company_name;
+      }
+    } catch (profileError) {
+      // Non-critical error, continue without company name
+      console.warn(`Could not fetch client profile for ${project.client_id}:`, profileError);
     }
   }
 
@@ -553,12 +569,21 @@ router.put('/:id', authenticateToken, idValidation, asyncHandler(async (req, res
     description, 
     budget_min, 
     budget_max, 
-    urgency,
+    urgency: rawUrgency,
     technologies,
     deadline,
     requirements,
     status
   } = req.body;
+
+  // Map frontend urgency values to database values
+  const urgencyMap = {
+    'low': 'low',
+    'medium': 'normal',
+    'high': 'high',
+    'critical': 'urgent'
+  };
+  const urgency = rawUrgency ? (urgencyMap[rawUrgency] || rawUrgency) : undefined;
 
   // Check ownership
   const { data: existing } = await supabaseAdmin
