@@ -819,9 +819,17 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('c
     .from('projects')
     .select('id, client_id, title')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (projectError || !project) {
+  if (projectError) {
+    console.error('Error fetching project:', projectError);
+    return res.status(500).json({ 
+      error: 'Failed to verify project',
+      details: projectError.message || 'Database error occurred'
+    });
+  }
+
+  if (!project) {
     return res.status(404).json({ error: 'Project not found' });
   }
 
@@ -835,9 +843,17 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('c
     .select('id, project_id, freelancer_id')
     .eq('id', applicationId)
     .eq('project_id', id)
-    .single();
+    .maybeSingle();
 
-  if (appError || !application) {
+  if (appError) {
+    console.error('Error fetching application:', appError);
+    return res.status(500).json({ 
+      error: 'Failed to verify application',
+      details: appError.message || 'Database error occurred'
+    });
+  }
+
+  if (!application) {
     return res.status(404).json({ error: 'Application not found' });
   }
 
@@ -877,6 +893,9 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('c
     updateData.interview_scheduled_at = interview_scheduled_at;
   }
 
+  // Log update data for debugging
+  console.log('Updating project application:', { applicationId, updateData });
+
   const { data: updatedApplication, error: updateError } = await supabaseAdmin
     .from('project_applications')
     .update(updateData)
@@ -890,7 +909,7 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('c
         headline
       )
     `)
-    .single();
+    .maybeSingle();
 
   if (updateError) {
     console.error('Error updating application:', updateError);
@@ -903,6 +922,14 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('c
     return res.status(500).json({ 
       error: 'Failed to update application',
       details: updateError.message || 'Database error occurred'
+    });
+  }
+
+  if (!updatedApplication) {
+    console.error('Update succeeded but no data returned for application:', applicationId);
+    return res.status(500).json({ 
+      error: 'Update succeeded but no data returned',
+      details: 'The application was updated but could not be retrieved'
     });
   }
 
