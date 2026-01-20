@@ -27,12 +27,12 @@ router.get('/', optionalAuth, paginationValidation, asyncHandler(async (req, res
 
   // Query freelancer_profiles with join to profiles
   // freelancer_profiles has profile_id referencing profiles(id)
-  // Try using the relationship without explicit foreign key name first
+  // Use explicit foreign key name for reliability
   let query = supabaseAdmin
     .from('freelancer_profiles')
     .select(`
       *,
-      profile:profiles(
+      profile:profiles!freelancer_profiles_profile_id_fkey(
         id,
         user_id,
         full_name,

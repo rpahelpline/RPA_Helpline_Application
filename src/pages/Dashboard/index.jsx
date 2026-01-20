@@ -187,6 +187,12 @@ const SidebarNav = memo(({ role, currentSection, setCurrentSection, unreadMessag
       ],
       ba_pm: [
         { id: 'overview', label: 'Dashboard', icon: BarChart3 },
+        { id: 'my-jobs', label: 'My Jobs', icon: Briefcase },
+        { id: 'job-applications', label: 'Job Applications', icon: FileText },
+        { id: 'my-projects', label: 'My Projects', icon: Target },
+        { id: 'project-applications', label: 'Project Applications', icon: FileText },
+        { id: 'post-job', label: 'Post Job', icon: Plus, route: '/post-job' },
+        { id: 'post-project', label: 'Post Project', icon: Plus, route: '/register/project' },
         { id: 'browse-projects', label: 'Browse Projects', icon: Target, route: '/projects' },
         { id: 'browse-jobs', label: 'Browse Jobs', icon: Briefcase, route: '/jobs' },
         { id: 'applications', label: 'My Applications', icon: FileText },
@@ -567,9 +573,12 @@ export const Dashboard = memo(() => {
         { title: 'MY APPLICATIONS', description: 'Track applications', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'applications' },
       ],
       ba_pm: [
-        { title: 'BROWSE PROJECTS', description: 'Find PM opportunities', icon: Target, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/projects' },
-        { title: 'MY APPLICATIONS', description: 'Track your proposals', icon: FileText, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'applications' },
-        { title: 'UPDATE PROFILE', description: 'Improve your visibility', icon: Settings, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'profile' },
+        { title: 'POST JOB', description: 'Create a new job listing', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/post-job' },
+        { title: 'POST PROJECT', description: 'Create a new RPA project', icon: Plus, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/register/project' },
+        { title: 'MY JOBS', description: 'Manage your posted jobs', icon: Briefcase, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-jobs' },
+        { title: 'MY PROJECTS', description: 'Manage your posted projects', icon: Target, iconBg: 'bg-secondary/10 border border-secondary/30', iconColor: 'text-secondary', link: null, section: 'my-projects' },
+        { title: 'JOB APPLICATIONS', description: 'Review received applications', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'job-applications' },
+        { title: 'PROJECT APPLICATIONS', description: 'Review received proposals', icon: FileText, iconBg: 'bg-accent/10 border border-accent/30', iconColor: 'text-accent', link: null, section: 'project-applications' },
       ],
       developer: [
         { title: 'BROWSE PROJECTS', description: 'Find dev opportunities', icon: Target, iconBg: 'bg-primary/10 border border-primary/30', iconColor: 'text-primary', link: '/projects' },
@@ -622,25 +631,28 @@ export const Dashboard = memo(() => {
       case 'settings':
         return <SettingsContent onClose={() => setCurrentSection('overview')} />;
 
-      // EMPLOYER SECTIONS
+      // HIRING ROLES SECTIONS - All can manage both jobs and projects
+      // Routes are determined by role: employer/ba_pm use EmployerDashboard, client uses ClientDashboard
       case 'my-jobs':
+        if (role === 'client') {
+          return <ClientDashboard initialTab="jobs" />;
+        }
         return <EmployerDashboard initialTab="jobs" />;
       case 'job-applications':
+        if (role === 'client') {
+          return <ClientDashboard initialTab="applications" />;
+        }
         return <EmployerDashboard initialTab="applications" />;
       case 'my-projects':
+        if (role === 'client') {
+          return <ClientDashboard initialTab="projects" />;
+        }
         return <EmployerDashboard initialTab="projects" />;
       case 'project-applications':
+        if (role === 'client') {
+          return <ClientDashboard initialTab="applications" />;
+        }
         return <EmployerDashboard initialTab="applications" />;
-
-      // CLIENT SECTIONS
-      case 'my-projects':
-        return <ClientDashboard initialTab="projects" />;
-      case 'project-applications':
-        return <ClientDashboard initialTab="applications" />;
-      case 'my-jobs':
-        return <ClientDashboard initialTab="jobs" />;
-      case 'job-applications':
-        return <ClientDashboard initialTab="applications" />;
 
       // TRAINER SECTIONS
       case 'my-courses':
@@ -753,8 +765,9 @@ export const Dashboard = memo(() => {
       case 'freelancer':
         return <FreelancerDashboard />;
       case 'developer':
-      case 'ba_pm':
         return <DeveloperDashboard />;
+      case 'ba_pm':
+        return <EmployerDashboard />;
       case 'trainer':
         return <TrainerDashboard />;
       case 'jobseeker':

@@ -240,7 +240,7 @@ router.get('/', optionalAuth, paginationValidation, asyncHandler(async (req, res
     .from('projects')
     .select(`
       *,
-      client:profiles!projects_client_id_fkey(id, full_name, avatar_url)
+      client:profiles(id, full_name, avatar_url)
     `, { count: 'exact' });
 
   // Apply filters
@@ -308,7 +308,14 @@ router.get('/', optionalAuth, paginationValidation, asyncHandler(async (req, res
   }
 
   // Transform projects to convert UUIDs to names
-  const transformedProjects = await transformProjects(projects || []);
+  let transformedProjects = [];
+  try {
+    transformedProjects = await transformProjects(projects || []);
+  } catch (transformError) {
+    console.error('Error transforming projects:', transformError);
+    // Return projects without transformation if transform fails
+    transformedProjects = projects || [];
+  }
 
   res.json({
     projects: transformedProjects,
@@ -370,7 +377,15 @@ router.get('/me/projects', authenticateToken, paginationValidation, asyncHandler
   }
 
   // Transform projects to convert UUIDs to names
-  const transformedProjects = await transformProjects(projects || []);
+  // Transform projects to convert UUIDs to names
+  let transformedProjects = [];
+  try {
+    transformedProjects = await transformProjects(projects || []);
+  } catch (transformError) {
+    console.error('Error transforming projects:', transformError);
+    // Return projects without transformation if transform fails
+    transformedProjects = projects || [];
+  }
 
   res.json({
     projects: transformedProjects,
@@ -391,14 +406,23 @@ router.get('/:id', idValidation, optionalAuth, asyncHandler(async (req, res) => 
     .from('projects')
     .select(`
       *,
-      client:profiles!projects_client_id_fkey(id, full_name, avatar_url)
+      client:profiles(id, full_name, avatar_url)
     `)
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error fetching project:', error);
-    return res.status(404).json({ error: 'Project not found' });
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint
+    });
+    return res.status(500).json({ 
+      error: 'Failed to fetch project',
+      details: error.message || 'Database error occurred'
+    });
   }
 
   if (!project) {
@@ -519,9 +543,9 @@ router.post('/', authenticateToken, requireRole('client', 'employer', 'ba_pm'), 
     })
     .select(`
       *,
-      client:profiles!projects_client_id_fkey(id, full_name, avatar_url)
+      client:profiles(id, full_name, avatar_url)
     `)
-    .single();
+    .maybeSingle();
 
   // Get company name from client_profiles if available (non-blocking)
   if (project && project.client_id) {
@@ -635,9 +659,9 @@ router.put('/:id', authenticateToken, idValidation, asyncHandler(async (req, res
     .eq('id', id)
     .select(`
       *,
-      client:profiles!projects_client_id_fkey(id, full_name, avatar_url)
+      client:profiles(id, full_name, avatar_url)
     `)
-    .single();
+    .maybeSingle();
 
   // Get company name from client_profiles if available
   if (project && project.client_id) {

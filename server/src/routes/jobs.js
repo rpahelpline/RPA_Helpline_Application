@@ -962,7 +962,7 @@ router.put('/:id/applications/:applicationId', authenticateToken, requireRole('e
     .from('job_applications')
     .select(`
       *,
-      applicant:profiles(
+      applicant:profiles!job_applications_applicant_id_fkey(
         id,
         full_name,
         avatar_url,
