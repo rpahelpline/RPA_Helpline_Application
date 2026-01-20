@@ -703,7 +703,10 @@ export const PortfolioContent = memo(({ onClose }) => {
       } catch (error) {
         if (!cancelled && mountedRef.current) {
           console.error('Failed to fetch profile:', error);
-          toast.error('Failed to load portfolio');
+          // Don't show error for rate limiting - it's temporary
+          if (error.status !== 429) {
+            toast.error('Failed to load portfolio');
+          }
         }
       } finally {
         if (!cancelled && mountedRef.current) {

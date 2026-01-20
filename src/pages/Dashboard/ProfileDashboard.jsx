@@ -87,7 +87,12 @@ export const ProfileDashboard = memo(() => {
       setProfile(profileData);
     } catch (err) {
       console.error('Failed to load profile:', err);
-      toast.error(err.error || 'Failed to load profile');
+      // Don't show error toast for rate limiting - it's temporary
+      if (err.status === 429) {
+        console.warn('Rate limited - profile will load automatically once limit resets');
+      } else {
+        toast.error(err.error || 'Failed to load profile');
+      }
     } finally {
       setLoading(false);
     }

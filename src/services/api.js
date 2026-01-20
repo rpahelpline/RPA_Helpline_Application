@@ -61,40 +61,20 @@ const handleResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
   
   if (!response.ok) {
-    // Handle rate limiting (429)
+    // Handle rate limiting (429) - don't throw error, return gracefully
     if (response.status === 429) {
       const retryAfter = response.headers.get('Retry-After') || '60';
-      throw new ApiError(
+      const error = new ApiError(
         data.error || data.message || `Too many requests. Please try again after ${retryAfter} seconds.`,
         response.status,
         { ...data, retryAfter: parseInt(retryAfter) }
       );
+      // Log but don't throw to prevent cascade errors
+      console.warn('Rate limit hit:', error.message);
+      throw error;
     }
     
-    // Handle token expiration
-    if (response.status === 401) {
-      const refreshToken = tokenManager.getRefreshToken();
-      if (refreshToken && data.error === 'Token expired') {
-        // Try to refresh the token
-        try {
-          const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken })
-          });
-          
-          if (refreshResponse.ok) {
-            const refreshData = await refreshResponse.json();
-            tokenManager.setTokens(refreshData.token, refreshData.refreshToken);
-            // Retry the original request would go here
-          } else {
-            tokenManager.clearTokens();
-          }
-        } catch {
-          tokenManager.clearTokens();
-        }
-      }
-    }
+    // Token refresh & retry is handled in apiRequest (single retry).
     
     // Handle validation errors (400)
     if (response.status === 400) {
@@ -127,9 +107,37 @@ const buildQueryString = (params) => {
   return queryString ? `?${queryString}` : '';
 };
 
+const refreshAccessToken = async () => {
+  const refreshToken = tokenManager.getRefreshToken();
+  if (!refreshToken) return null;
+
+  const normalizedBase = API_BASE_URL.replace(/\/+$/, '');
+  const refreshUrl = `${normalizedBase}/auth/refresh`;
+
+  const refreshResponse = await fetch(refreshUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!refreshResponse.ok) {
+    tokenManager.clearTokens();
+    return null;
+  }
+
+  const refreshData = await refreshResponse.json().catch(() => ({}));
+  if (refreshData?.token) {
+    tokenManager.setTokens(refreshData.token, refreshData.refreshToken);
+    return refreshData.token;
+  }
+
+  tokenManager.clearTokens();
+  return null;
+};
+
 const apiRequest = async (endpoint, options = {}) => {
+  const { params, _retry, ...restOptions } = options;
   const token = tokenManager.getToken();
-  const { params, ...restOptions } = options;
   
   const config = {
     headers: {
@@ -153,6 +161,19 @@ const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
+
+    // If token expired, refresh once and retry the original request
+    if (response.status === 401 && !_retry) {
+      const data = await response.json().catch(() => ({}));
+      if (data?.error === 'Token expired') {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          return await apiRequest(endpoint, { ...options, _retry: true });
+        }
+      }
+      throw new ApiError(data.error || data.message || 'Unauthorized', response.status, data);
+    }
+
     return await handleResponse(response);
   } catch (error) {
     if (error instanceof ApiError) {

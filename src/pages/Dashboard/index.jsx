@@ -287,7 +287,12 @@ export const Dashboard = memo(() => {
             setProfileCompletion(statsRes.stats?.profile_completion || 0);
           }
         } catch (error) {
-          if (!cancelled) console.error('Failed to fetch stats:', error);
+          if (!cancelled) {
+            // Don't log rate limit errors - they're temporary
+            if (error.status !== 429) {
+              console.error('Failed to fetch stats:', error);
+            }
+          }
         }
 
         // Fetch notifications
@@ -297,7 +302,12 @@ export const Dashboard = memo(() => {
             setNotifications(notifRes.notifications || []);
           }
         } catch (error) {
-          if (!cancelled) console.error('Failed to fetch notifications:', error);
+          if (!cancelled) {
+            // Don't log rate limit errors - they're temporary
+            if (error.status !== 429) {
+              console.error('Failed to fetch notifications:', error);
+            }
+          }
         }
 
         // Fetch activity

@@ -292,26 +292,26 @@ export const AdminDashboard = memo(() => {
       }
     };
     init();
-  }, [activeTab]);
+  }, [activeTab, loadStats, loadUsers, loadProjects, loadJobs, loadVerificationRequests, loadTraining]);
 
   // Reload when filters change
   useEffect(() => {
     if (activeTab === 'users' && !loading) {
       loadUsers();
     }
-  }, [userPage, userSearch, userTypeFilter, activeTab]);
+  }, [userPage, userSearch, userTypeFilter, activeTab, loading, loadUsers]);
 
   useEffect(() => {
     if (activeTab === 'projects' && !loading) {
       loadProjects();
     }
-  }, [projectPage, projectSearch, projectStatusFilter, activeTab]);
+  }, [projectPage, projectSearch, projectStatusFilter, activeTab, loading, loadProjects]);
 
   useEffect(() => {
     if (activeTab === 'jobs' && !loading) {
       loadJobs();
     }
-  }, [jobPage, jobSearch, jobStatusFilter, activeTab]);
+  }, [jobPage, jobSearch, jobStatusFilter, activeTab, loading, loadJobs]);
 
   // User Handlers
   const handleEditUser = (user) => {
