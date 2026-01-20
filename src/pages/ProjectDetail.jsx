@@ -17,17 +17,18 @@ import { useToast } from '../hooks/useToast';
 
 export const ProjectDetail = memo(() => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { isAuthenticated, user, profile } = useAuthStore();
-  const role = profile?.user_type || user?.user_type || null;
-  const toast = useToast();
-  const toastRef = useRef(toast);
-  const rateLimitRef = useRef(false);
-  const hasLoadedRef = useRef(false);
-  const loadingTimeoutRef = useRef(null);
-  const [project, setProject] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
+    const navigate = useNavigate();
+    const { isAuthenticated, user, profile } = useAuthStore();
+    const role = profile?.user_type || user?.user_type || null;
+    const toast = useToast();
+    const toastRef = useRef(toast);
+    const rateLimitRef = useRef(false);
+    const hasLoadedRef = useRef(false);
+    const loadingTimeoutRef = useRef(null);
+    const isLoadingRef = useRef(false); // Prevent multiple simultaneous loads
+    const [project, setProject] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(null);
   const [applying, setApplying] = useState(false);
   const [applicationData, setApplicationData] = useState({
     cover_letter: '',
@@ -48,6 +49,7 @@ export const ProjectDetail = memo(() => {
     }
 
     let cancelled = false;
+    let isActive = true;
 
     // Clear any existing timeout
     if (loadingTimeoutRef.current) {
@@ -55,16 +57,19 @@ export const ProjectDetail = memo(() => {
       loadingTimeoutRef.current = null;
     }
 
+    // Store the ID at effect start to prevent stale closures
+    const effectId = id;
+    
     // Reset flags when ID changes
     const currentProjectId = project?.id;
-    if (currentProjectId !== id) {
+    if (currentProjectId !== effectId) {
       hasLoadedRef.current = false;
       rateLimitRef.current = false;
       setLoadError(null);
     }
 
     // Only skip if we've successfully loaded THIS specific project
-    if (hasLoadedRef.current && currentProjectId === id && project && !loadError) {
+    if (hasLoadedRef.current && currentProjectId === effectId && project && !loadError) {
       return;
     }
 
@@ -88,15 +93,25 @@ export const ProjectDetail = memo(() => {
     }, 15000);
 
     const loadProject = async () => {
-      if (!cancelled) {
-        setLoading(true);
-        setLoadError(null);
-        rateLimitRef.current = false;
+      // Double-check we're still loading the same ID
+      if (effectId !== id || cancelled || !isActive) {
+        return;
       }
 
+      // Prevent multiple simultaneous loads
+      if (isLoadingRef.current) {
+        console.log('[ProjectDetail] Load already in progress, skipping');
+        return;
+      }
+
+      isLoadingRef.current = true;
+      setLoading(true);
+      setLoadError(null);
+      rateLimitRef.current = false;
+
       try {
-        console.log('[ProjectDetail] Fetching project:', id);
-        const response = await projectApi.getById(id);
+        console.log('[ProjectDetail] Fetching project:', effectId);
+        const response = await projectApi.getById(effectId);
         console.log('[ProjectDetail] API response:', response);
         
         const projectData = response?.project || response;
@@ -126,38 +141,38 @@ export const ProjectDetail = memo(() => {
         }
       } catch (err) {
         console.error('[ProjectDetail] Failed to load project:', err);
-        if (!cancelled) {
-          setLoadError(err);
-          setLoading(false);
-          hasLoadedRef.current = false;
-          if (loadingTimeoutRef.current) {
-            clearTimeout(loadingTimeoutRef.current);
-            loadingTimeoutRef.current = null;
-          }
-          // Mark rate limit so we don't retry automatically
-          if (err?.status === 429) {
-            rateLimitRef.current = true;
-            console.warn('[ProjectDetail] Rate limited - stopping automatic retries');
-          } else {
-            // Only show toast for non-429 errors
-            toastRef.current?.error?.(err?.error || err?.message || 'Failed to load project');
-          }
+        
+        // Check if this effect is still active and for the same ID
+        if (cancelled || !isActive || effectId !== id) {
+          console.log('[ProjectDetail] Effect cancelled or ID changed, ignoring error');
+          return;
+        }
+
+        setLoadError(err);
+        setLoading(false);
+        hasLoadedRef.current = false;
+        isLoadingRef.current = false;
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
+        // Mark rate limit so we don't retry automatically
+        if (err?.status === 429) {
+          rateLimitRef.current = true;
+          console.warn('[ProjectDetail] Rate limited - stopping automatic retries');
+        } else {
+          // Only show toast for non-429 errors
+          toastRef.current?.error?.(err?.error || err?.message || 'Failed to load project');
         }
       }
     };
 
-    if (id) {
-      loadProject();
-    } else {
-      setLoading(false);
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
-      }
-    }
+    loadProject();
     
     return () => {
       cancelled = true;
+      isActive = false;
+      isLoadingRef.current = false;
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
         loadingTimeoutRef.current = null;
@@ -248,17 +263,20 @@ export const ProjectDetail = memo(() => {
     }
   }, [isAuthenticated, role, navigate, toast, id, applicationData]);
 
-  // Debug logging
+  // Debug logging (throttled to prevent spam)
   useEffect(() => {
-    console.log('[ProjectDetail] Render state:', {
-      id,
-      loading,
-      hasProject: !!project,
-      projectId: project?.id,
-      hasError: !!loadError,
-      errorStatus: loadError?.status
-    });
-  }, [id, loading, project, loadError]);
+    const timeoutId = setTimeout(() => {
+      console.log('[ProjectDetail] Render state:', {
+        id,
+        loading,
+        hasProject: !!project,
+        projectId: project?.id,
+        hasError: !!loadError,
+        errorStatus: loadError?.status
+      });
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [id, loading, project?.id, loadError?.status]);
 
   // Show loading state
   if (loading && !project) {
