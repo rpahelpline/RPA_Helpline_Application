@@ -128,11 +128,12 @@ export const requireAdmin = async (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Get user from users table to check is_admin using userId from JWT token
+    // Get user from users table to check is_admin
+    // Note: req.userId is actually the profile ID, so we need to use the user_id from req.user
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('is_admin')
-      .eq('id', req.userId)
+      .eq('id', req.user.user_id)
       .single();
 
     if (error || !user) {
