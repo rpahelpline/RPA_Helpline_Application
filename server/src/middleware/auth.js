@@ -128,21 +128,25 @@ export const requireAdmin = async (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Get user from users table to check is_admin
+    // Get user from users table to check is_admin using userId from JWT token
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('is_admin')
-      .eq('id', req.user.user_id)
+      .eq('id', req.userId)
       .single();
 
     if (error || !user) {
       return res.status(404).json({ error: 'User not found' });
-    }    if (!user.is_admin) {
+    }
+
+    if (!user.is_admin) {
       return res.status(403).json({ 
         error: 'Admin access required',
         message: 'This action requires administrator privileges'
       });
-    }    next();
+    }
+
+    next();
   } catch (error) {
     console.error('Admin check error:', error);
     return res.status(500).json({ error: 'Failed to verify admin status' });

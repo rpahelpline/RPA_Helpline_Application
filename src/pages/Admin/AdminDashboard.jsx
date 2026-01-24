@@ -166,6 +166,11 @@ export const AdminDashboard = memo(() => {
     }
   }, []);
 
+  // Initial load stats on mount
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
   // Load Users
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -285,13 +290,12 @@ export const AdminDashboard = memo(() => {
     }
   }, [trainingPage]);
 
-  // Initial load based on active tab
+  // Load data based on active tab
   useEffect(() => {
     const init = async () => {
       setLoading(true);
       setError(null);
       try {
-        await loadStats();
         if (activeTab === 'users') {
           await loadUsers();
         } else if (activeTab === 'projects') {
@@ -322,7 +326,7 @@ export const AdminDashboard = memo(() => {
       }
     };
     init();
-  }, [activeTab, loadStats, loadUsers, loadProjects, loadJobs, loadApplications, loadVerificationRequests, loadTraining]);
+  }, [activeTab, loadUsers, loadProjects, loadJobs, loadApplications, loadVerificationRequests, loadTraining]);
 
   // Reload when filters change
   useEffect(() => {
