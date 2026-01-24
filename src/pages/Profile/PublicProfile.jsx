@@ -389,12 +389,16 @@ export const PublicProfile = memo(() => {
                   profile={profile} 
                   specializedProfile={specializedProfile}
                   onRefresh={() => {}}
+                  onEditSkills={undefined}
+                  onEditPlatforms={undefined}
                 />
               )}
               {userType === 'job_seeker' && (
                 <JobSeekerProfile 
                   profile={profile} 
                   specializedProfile={specializedProfile}
+                  onEditSkills={undefined}
+                  onRefresh={undefined}
                 />
               )}
               {userType === 'trainer' && (
@@ -407,6 +411,8 @@ export const PublicProfile = memo(() => {
                 <BAPMProfile 
                   profile={profile} 
                   specializedProfile={specializedProfile}
+                  onEditSkills={undefined}
+                  onRefresh={undefined}
                 />
               )}
               {userType === 'client' && (
@@ -419,6 +425,9 @@ export const PublicProfile = memo(() => {
                 <EmployerProfile 
                   profile={profile} 
                   specializedProfile={specializedProfile}
+                  onEditSkills={undefined}
+                  onEditPlatforms={undefined}
+                  onRefresh={undefined}
                 />
               )}
 

@@ -15,8 +15,11 @@ const getProficiencyLabel = (level) => {
   }
 };
 
-export const JobSeekerProfile = memo(({ profile, specializedProfile }) => {
+export const JobSeekerProfile = memo(({ profile, specializedProfile, onEditSkills, onRefresh }) => {
   const navigate = useNavigate();
+  
+  // Ensure callbacks are defined (no-op if not provided)
+  const handleEditSkills = onEditSkills || (() => {});
 
   return (
     <>
@@ -32,7 +35,7 @@ export const JobSeekerProfile = memo(({ profile, specializedProfile }) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onEditSkills}
+                onClick={handleEditSkills}
                 className="h-7 px-2"
               >
                 <Edit className="w-3 h-3" />
@@ -144,7 +147,7 @@ export const JobSeekerProfile = memo(({ profile, specializedProfile }) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onEditSkills}
+                onClick={handleEditSkills}
                 className="h-7 px-2"
               >
                 <Edit className="w-3 h-3" />

@@ -8,6 +8,11 @@ import { Link } from 'react-router-dom';
 
 export const EmployerProfile = memo(({ profile, specializedProfile, onEditSkills, onEditPlatforms, onRefresh }) => {
   const navigate = useNavigate();
+  
+  // Ensure callbacks are defined (no-op if not provided)
+  const handleEditSkills = onEditSkills || (() => {});
+  const handleEditPlatforms = onEditPlatforms || (() => {});
+  const handleRefresh = onRefresh || (() => {});
 
   return (
     <>
