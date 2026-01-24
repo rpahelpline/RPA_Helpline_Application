@@ -11,7 +11,7 @@ import { LoadingSpinner, SkeletonLoader } from '../components/common/LoadingSpin
 import { ProjectApplicationsManager } from '../components/applications/ProjectApplicationsManager';
 import { projectApi } from '../services/api';
 import { useEffect, useState, memo, useCallback, useRef } from 'react';
-import { Clock, DollarSign, Building2, ArrowLeft, CheckCircle, Activity, Loader2, Users } from 'lucide-react';
+import { Clock, DollarSign, Building2, ArrowLeft, CheckCircle, Activity, Loader2, Users, Globe, ExternalLink } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useToast } from '../hooks/useToast';
 
@@ -396,10 +396,10 @@ export const ProjectDetail = memo(() => {
                 </CardHeader>
                 <CardContent className="px-4 sm:px-6">
                   <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 text-sm">
-                    {project.client && (
+                    {(project.company_name || project.client) && (
                       <div className="flex items-center text-muted-foreground">
                         <Building2 className="mr-1.5 h-3 w-3 text-secondary" />
-                        {project.client.company_name || project.client.full_name || 'Client'}
+                        {project.company_name || project.client?.company_name || project.client?.full_name || 'Client'}
                       </div>
                     )}
                     {project.deadline && (
@@ -420,6 +420,30 @@ export const ProjectDetail = memo(() => {
                       {project.description}
                     </p>
                   </div>
+
+                  {/* About the company */}
+                  {(project.company_description || project.company_website) && (
+                    <div className="mb-4">
+                      <h2 className="text-sm md:text-base font-black text-foreground mb-2 font-display uppercase">ABOUT THE COMPANY</h2>
+                      {project.company_description && (
+                        <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap font-mono text-xs md:text-sm mb-2">
+                          {project.company_description}
+                        </p>
+                      )}
+                      {project.company_website && (
+                        <a
+                          href={project.company_website.startsWith('http') ? project.company_website : `https://${project.company_website}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm text-primary hover:underline font-mono"
+                        >
+                          <Globe className="w-3 h-3" />
+                          Visit company website
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  )}
 
                   {/* Technologies */}
                   {project.technologies && project.technologies.length > 0 && (
@@ -460,6 +484,26 @@ export const ProjectDetail = memo(() => {
                 </CardHeader>
                 <CardContent className="px-4 md:px-6">
                   <div className="space-y-3">
+                    {(project.company_name || project.client?.company_name) && (
+                      <div>
+                        <p className="text-muted-foreground text-xs mb-0.5 font-mono uppercase">Company</p>
+                        <p className="text-foreground font-semibold font-display text-sm">
+                          {project.company_name || project.client?.company_name}
+                        </p>
+                        {project.company_website && (
+                          <a
+                            href={project.company_website.startsWith('http') ? project.company_website : `https://${project.company_website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5"
+                          >
+                            <Globe className="w-3 h-3" />
+                            Website
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    )}
                     <div>
                       <p className="text-muted-foreground text-xs mb-0.5 font-mono uppercase">Status</p>
                       <Badge variant={project.status === 'open' ? 'success' : 'default'} className="text-xs">

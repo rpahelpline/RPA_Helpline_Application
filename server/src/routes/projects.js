@@ -502,7 +502,10 @@ router.post('/', authenticateToken, requireRole('client', 'employer', 'ba_pm'), 
     urgency: rawUrgency,
     technologies = [],
     deadline,
-    requirements
+    requirements,
+    company_name,
+    company_website,
+    company_description
   } = req.body;
 
   // Map frontend urgency values to database values
@@ -525,22 +528,27 @@ router.post('/', authenticateToken, requireRole('client', 'employer', 'ba_pm'), 
   // Convert technologies from names to UUIDs and separate into platforms/skills
   const { platformUuids, skillUuids } = await convertTechnologiesToUuids(technologies);
 
+  const insertPayload = {
+    client_id: req.userId,
+    title,
+    description: fullDescription,
+    budget_min: budget_min || null,
+    budget_max: budget_max || null,
+    urgency,
+    required_platforms: platformUuids.length > 0 ? platformUuids : null,
+    required_skills: skillUuids.length > 0 ? skillUuids : null,
+    deadline: deadline || null,
+    status: PROJECT_STATUS.OPEN,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  if (company_name !== undefined) insertPayload.company_name = company_name || null;
+  if (company_website !== undefined) insertPayload.company_website = company_website || null;
+  if (company_description !== undefined) insertPayload.company_description = company_description || null;
+
   const { data: project, error } = await supabaseAdmin
     .from('projects')
-    .insert({
-      client_id: req.userId,
-      title,
-      description: fullDescription,
-      budget_min: budget_min || null,
-      budget_max: budget_max || null,
-      urgency,
-      required_platforms: platformUuids.length > 0 ? platformUuids : null,
-      required_skills: skillUuids.length > 0 ? skillUuids : null,
-      deadline: deadline || null,
-      status: PROJECT_STATUS.OPEN,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+    .insert(insertPayload)
     .select(`
       *,
       client:profiles(id, full_name, avatar_url)
@@ -602,7 +610,10 @@ router.put('/:id', authenticateToken, idValidation, asyncHandler(async (req, res
     technologies,
     deadline,
     requirements,
-    status
+    status,
+    company_name,
+    company_website,
+    company_description
   } = req.body;
 
   // Map frontend urgency values to database values
@@ -652,6 +663,9 @@ router.put('/:id', authenticateToken, idValidation, asyncHandler(async (req, res
   
   if (deadline !== undefined) updates.deadline = deadline;
   if (status !== undefined) updates.status = status;
+  if (company_name !== undefined) updates.company_name = company_name || null;
+  if (company_website !== undefined) updates.company_website = company_website || null;
+  if (company_description !== undefined) updates.company_description = company_description || null;
 
   const { data: project, error } = await supabaseAdmin
     .from('projects')

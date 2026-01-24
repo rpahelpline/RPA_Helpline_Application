@@ -13,7 +13,7 @@ import { Label } from '../../components/ui/Label';
 import { Select } from '../../components/ui/Select';
 import {
   ArrowLeft, Briefcase, MapPin, DollarSign, Clock, CheckCircle,
-  Loader2, Plus, X, Globe
+  Loader2, Plus, X, Globe, Building2
 } from 'lucide-react';
 
 export const PostJob = memo(() => {
@@ -35,7 +35,10 @@ export const PostJob = memo(() => {
     technologies: [],
     requirements: '',
     benefits: '',
-    application_deadline: ''
+    application_deadline: '',
+    company_name: '',
+    company_website: '',
+    company_description: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -91,7 +94,10 @@ export const PostJob = memo(() => {
         technologies: formData.technologies,
         requirements: formData.requirements || null,
         benefits: formData.benefits || null,
-        application_deadline: formData.application_deadline || null
+        application_deadline: formData.application_deadline || null,
+        company_name: (formData.company_name || '').trim() || null,
+        company_website: (formData.company_website || '').trim() || null,
+        company_description: (formData.company_description || '').trim() || null
       };
 
       const response = await jobApi.create(jobData);
@@ -199,6 +205,47 @@ export const PostJob = memo(() => {
                   <Globe className="w-4 h-4" />
                   Remote position
                 </Label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Company Details */}
+          <Card className="tech-panel border-border bg-card/50 mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg font-display flex items-center gap-2">
+                <Building2 className="w-5 h-5" />
+                COMPANY DETAILS
+              </CardTitle>
+              <CardDescription>Optional: Company name, website, and brief description</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>COMPANY NAME</Label>
+                <Input
+                  value={formData.company_name}
+                  onChange={(e) => updateFormData('company_name', e.target.value)}
+                  placeholder="e.g., Acme RPA Solutions"
+                  className="bg-background"
+                />
+              </div>
+              <div>
+                <Label>COMPANY WEBSITE</Label>
+                <Input
+                  value={formData.company_website}
+                  onChange={(e) => updateFormData('company_website', e.target.value)}
+                  placeholder="e.g., https://example.com"
+                  className="bg-background"
+                />
+              </div>
+              <div>
+                <Label>ABOUT THE COMPANY</Label>
+                <Textarea
+                  value={formData.company_description}
+                  onChange={(e) => updateFormData('company_description', e.target.value)}
+                  placeholder="Brief description of your company, culture, or why candidates should join..."
+                  rows={3}
+                  className="bg-background"
+                />
               </div>
             </CardContent>
           </Card>

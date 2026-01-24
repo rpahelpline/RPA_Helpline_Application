@@ -343,7 +343,7 @@ export const Jobs = memo(() => {
     return jobs.map(job => ({
       id: job.id,
       title: job.title,
-      company: job.employer?.company_name || job.company_name || 'Company',
+      company: job.company_name || job.employer?.company_name || 'Company',
       location: job.location || 'Not specified',
       workType: job.is_remote ? 'Remote' : 'On-site',
       employmentType: job.job_type?.replace('_', '-') || 'Full-time',

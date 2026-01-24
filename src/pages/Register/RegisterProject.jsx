@@ -1,6 +1,6 @@
 import { useState, memo, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Code, Clock, DollarSign, AlertCircle, Loader2, Plus, X, Calendar } from 'lucide-react';
+import { ArrowLeft, FileText, Code, Clock, DollarSign, AlertCircle, Loader2, Plus, X, Calendar, Building2 } from 'lucide-react';
 import { Container } from '../../components/layout/Container';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -31,6 +31,9 @@ export const RegisterProject = memo(() => {
     technologies: [],
     deadline: '',
     requirements: '',
+    company_name: '',
+    company_website: '',
+    company_description: '',
   });
   
   const [errors, setErrors] = useState({});
@@ -129,6 +132,9 @@ export const RegisterProject = memo(() => {
         technologies: formData.technologies,
         deadline: formData.deadline || null,
         requirements: formData.requirements.trim() || null,
+        company_name: (formData.company_name || '').trim() || null,
+        company_website: (formData.company_website || '').trim() || null,
+        company_description: (formData.company_description || '').trim() || null,
       };
       
       const result = await createProject(projectData);
@@ -215,6 +221,49 @@ export const RegisterProject = memo(() => {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {formData.description.length}/5000 characters (minimum 20)
                 </p>
+              </div>
+
+              {/* Company Details */}
+              <div>
+                <label className="block text-foreground font-mono uppercase tracking-wider text-xs mb-2 flex items-center gap-2">
+                  <Building2 className="h-3 w-3" />
+                  COMPANY DETAILS (Optional)
+                </label>
+                <div className="space-y-4 p-4 bg-muted/20 rounded-lg border border-border">
+                  <div>
+                    <label className="block text-muted-foreground text-xs mb-1">Company name</label>
+                    <input
+                      type="text"
+                      disabled={isFormDisabled}
+                      value={formData.company_name}
+                      onChange={(e) => updateField('company_name', e.target.value)}
+                      placeholder="e.g., Acme RPA Solutions"
+                      className="w-full px-4 py-3 bg-background border border-input rounded-lg text-foreground placeholder-muted-foreground font-mono text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-muted-foreground text-xs mb-1">Company website</label>
+                    <input
+                      type="text"
+                      disabled={isFormDisabled}
+                      value={formData.company_website}
+                      onChange={(e) => updateField('company_website', e.target.value)}
+                      placeholder="e.g., https://example.com"
+                      className="w-full px-4 py-3 bg-background border border-input rounded-lg text-foreground placeholder-muted-foreground font-mono text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-muted-foreground text-xs mb-1">About the company</label>
+                    <Textarea
+                      disabled={isFormDisabled}
+                      value={formData.company_description}
+                      onChange={(e) => updateField('company_description', e.target.value)}
+                      placeholder="Brief description of your company..."
+                      rows={2}
+                      className="bg-background border-input text-foreground placeholder-muted-foreground font-mono text-sm"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Budget Range */}

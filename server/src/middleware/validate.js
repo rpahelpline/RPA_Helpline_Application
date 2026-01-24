@@ -80,6 +80,21 @@ export const projectValidation = [
     .optional()
     .isArray()
     .withMessage('Technologies must be an array'),
+  body('company_name')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Company name must not exceed 200 characters'),
+  body('company_website')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Company website must not exceed 500 characters'),
+  body('company_description')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Company description must not exceed 1000 characters'),
   validate
 ];
 

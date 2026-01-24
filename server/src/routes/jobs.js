@@ -512,7 +512,10 @@ router.post('/', authenticateToken, requireRole('employer', 'client', 'ba_pm'), 
     technologies,
     requirements,
     benefits,
-    application_deadline
+    application_deadline,
+    company_name,
+    company_website,
+    company_description
   } = req.body;
 
   if (!title || !description) {
@@ -542,26 +545,31 @@ router.post('/', authenticateToken, requireRole('employer', 'client', 'ba_pm'), 
   // Convert technology names to UUIDs and separate platforms/skills
   const { platformUuids, skillUuids } = await convertTechnologiesToUuids(technologies);
 
+  const insertPayload = {
+    employer_id: req.userId,
+    title,
+    description,
+    employment_type: job_type || 'full_time',
+    locations: locationsArray,
+    work_arrangement: workArrangement,
+    salary_min: salary_min || null,
+    salary_max: salary_max || null,
+    required_platforms: platformUuids.length > 0 ? platformUuids : null,
+    required_skills: skillUuids.length > 0 ? skillUuids : null,
+    preferred_qualifications: requirements || null,
+    benefits: benefits ? (Array.isArray(benefits) ? benefits : [benefits]) : null,
+    application_deadline: application_deadline || null,
+    status: 'open',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  if (company_name !== undefined) insertPayload.company_name = company_name || null;
+  if (company_website !== undefined) insertPayload.company_website = company_website || null;
+  if (company_description !== undefined) insertPayload.company_description = company_description || null;
+
   const { data: job, error } = await supabaseAdmin
     .from('jobs')
-    .insert({
-      employer_id: req.userId,
-      title,
-      description,
-      employment_type: job_type || 'full_time',
-      locations: locationsArray,
-      work_arrangement: workArrangement,
-      salary_min: salary_min || null,
-      salary_max: salary_max || null,
-      required_platforms: platformUuids.length > 0 ? platformUuids : null,
-      required_skills: skillUuids.length > 0 ? skillUuids : null,
-      preferred_qualifications: requirements || null,
-      benefits: benefits ? (Array.isArray(benefits) ? benefits : [benefits]) : null,
-      application_deadline: application_deadline || null,
-      status: 'open',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+    .insert(insertPayload)
     .select(`
       *,
       employer:profiles!jobs_employer_id_fkey(id, full_name, avatar_url)

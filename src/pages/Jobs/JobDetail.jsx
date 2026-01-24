@@ -263,7 +263,7 @@ export const JobDetail = memo(() => {
                       <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Building2 className="w-4 h-4" />
-                          {job.employer?.company_name || 'Company'}
+                          {job.company_name || job.employer?.company_name || 'Company'}
                         </span>
                         {job.location && (
                           <span className="flex items-center gap-1">
@@ -350,6 +350,32 @@ export const JobDetail = memo(() => {
                             : JSON.stringify(job.requirements)
                         }
                       </div>
+                    </div>
+                  )}
+
+                  {/* About the company */}
+                  {(job.company_description || job.company_website) && (
+                    <div className="mb-4 md:mb-6">
+                      <h2 className="text-sm md:text-base font-black text-foreground mb-2 font-display uppercase">
+                        ABOUT THE COMPANY
+                      </h2>
+                      {job.company_description && (
+                        <p className="text-sm md:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap mb-2">
+                          {job.company_description}
+                        </p>
+                      )}
+                      {job.company_website && (
+                        <a
+                          href={job.company_website.startsWith('http') ? job.company_website : `https://${job.company_website}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                        >
+                          <Globe className="w-4 h-4" />
+                          Visit company website
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </div>
                   )}
 
@@ -610,33 +636,47 @@ export const JobDetail = memo(() => {
               )}
 
               {/* Company Info */}
-              {job.employer && (
+              {(job.company_name || job.employer?.company_name || job.employer) && (
                 <Card className="tech-panel border-border bg-card/50">
                   <CardHeader className="px-4 sm:px-6 py-3 md:py-4">
                     <CardTitle className="text-sm md:text-base font-display">COMPANY</CardTitle>
                   </CardHeader>
-                  <CardContent className="px-4 sm:px-6">
-                    <div className="flex items-center gap-2.5 md:gap-3 mb-3 md:mb-4">
+                  <CardContent className="px-4 sm:px-6 space-y-3">
+                    <div className="flex items-center gap-2.5 md:gap-3">
                       <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                         <Building2 className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
                         <p className="font-display font-bold text-foreground text-sm md:text-base truncate">
-                          {job.employer.company_name || 'Company'}
+                          {job.company_name || job.employer?.company_name || 'Company'}
                         </p>
-                        {job.employer.full_name && (
+                        {job.employer?.full_name && (
                           <p className="text-[10px] md:text-xs text-muted-foreground truncate">
                             {job.employer.full_name}
                           </p>
                         )}
                       </div>
                     </div>
-                    <Link
-                      to={`/profile/${job.employer.id}`}
-                      className="text-sm text-primary hover:underline flex items-center gap-1"
-                    >
-                      View Company Profile <ExternalLink className="w-3 h-3" />
-                    </Link>
+                    {job.company_website && (
+                      <a
+                        href={job.company_website.startsWith('http') ? job.company_website : `https://${job.company_website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Globe className="w-3 h-3" />
+                        Company website
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                    {job.employer?.id && (
+                      <Link
+                        to={`/profile/${job.employer.id}`}
+                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                      >
+                        View Company Profile <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    )}
                   </CardContent>
                 </Card>
               )}

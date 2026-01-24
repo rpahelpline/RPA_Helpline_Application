@@ -339,7 +339,7 @@ export const Projects = memo(() => {
     return projects.map(project => ({
       id: project.id,
       title: project.title,
-      company: project.client?.company_name || project.client?.full_name || 'Client',
+      company: project.company_name || project.client?.company_name || project.client?.full_name || 'Client',
       location: 'Remote', // Backend doesn't have location field yet
       budget: project.budget_min && project.budget_max
         ? `₹${project.budget_min.toLocaleString()} - ₹${project.budget_max.toLocaleString()}`

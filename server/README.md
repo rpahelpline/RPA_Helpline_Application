@@ -58,6 +58,7 @@ Run the SQL schema in your Supabase SQL Editor:
 **Migrations** (run in order if you have an existing DB):
 - `database/migrations/add_otp_table.sql` – OTP, profiles fields (e.g. `resume_url`, `alternate_phone`)
 - `database/migrations/ensure_resume_support.sql` – Ensures `profiles.resume_url` exists (idempotent)
+- `database/migrations/add_company_to_jobs_and_projects.sql` – Adds `company_name`, `company_website`, `company_description` to jobs and projects (idempotent)
 
 **Supabase Storage:** Create a **`resumes`** bucket (and **`avatars`** if using cover/avatar uploads). The upload API will try to create them, but creating them in the Supabase dashboard is more reliable. Set bucket to **public** if resumes/avatars should be viewable via URL.
 
