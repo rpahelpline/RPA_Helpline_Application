@@ -776,6 +776,9 @@ export const ProfileDashboard = memo(() => {
                 <EmployerProfile 
                   profile={profile} 
                   specializedProfile={specializedProfile}
+                  onRefresh={loadProfile}
+                  onEditSkills={() => setShowSkillsModal(true)}
+                  onEditPlatforms={() => setShowPlatformsModal(true)}
                 />
               )}
             </div>

@@ -6,7 +6,7 @@ import { Badge } from '../ui/Badge';
 import { Building2, Briefcase, Users, Target, Edit, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export const EmployerProfile = memo(({ profile, specializedProfile }) => {
+export const EmployerProfile = memo(({ profile, specializedProfile, onEditSkills, onEditPlatforms, onRefresh }) => {
   const navigate = useNavigate();
 
   return (
