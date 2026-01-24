@@ -956,14 +956,17 @@ router.put('/applications/:id', idValidation, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, review_notes } = req.body;
 
+  const update = {
+    updated_at: new Date().toISOString(),
+    last_status_change: new Date().toISOString()
+  };
+  if (status !== undefined) update.status = status;
+  if (review_notes !== undefined) update.employer_notes = review_notes;
+  if (status !== undefined) update.viewed_at = new Date().toISOString();
+
   const { data: application, error } = await supabaseAdmin
     .from('job_applications')
-    .update({
-      status,
-      review_notes,
-      reviewed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+    .update(update)
     .eq('id', id)
     .select()
     .single();

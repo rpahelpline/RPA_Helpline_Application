@@ -55,6 +55,12 @@ Run the SQL schema in your Supabase SQL Editor:
 - Copy and paste into Supabase SQL Editor
 - Execute
 
+**Migrations** (run in order if you have an existing DB):
+- `database/migrations/add_otp_table.sql` – OTP, profiles fields (e.g. `resume_url`, `alternate_phone`)
+- `database/migrations/ensure_resume_support.sql` – Ensures `profiles.resume_url` exists (idempotent)
+
+**Supabase Storage:** Create a **`resumes`** bucket (and **`avatars`** if using cover/avatar uploads). The upload API will try to create them, but creating them in the Supabase dashboard is more reliable. Set bucket to **public** if resumes/avatars should be viewable via URL.
+
 ### 4. Start Server
 
 ```bash
@@ -330,7 +336,21 @@ Uses JWT tokens:
 | JWT_EXPIRES_IN | No | 7d | Token expiry |
 | FRONTEND_URL | No | http://localhost:5173 | CORS origin |
 | MAX_FILE_SIZE | No | 5242880 | Max upload (bytes) |
-| UPLOAD_DIR | No | ./uploads | Upload directory |
+| UPLOAD_DIR | No | ./uploads | Upload directory (relative to server cwd) |
+
+## ✔ Database verification (resume & applications)
+
+Ensure these exist for resume upload and job applications:
+
+| Table | Column | Purpose |
+|-------|--------|---------|
+| `profiles` | `resume_url` | Profile dashboard resume; add via `ensure_resume_support.sql` or `add_otp_table.sql` |
+| `job_applications` | `resume_url` | Resume attached to job application |
+| `job_applications` | `employer_notes` | Employer/admin notes |
+| `job_applications` | `viewed_at` | When application was viewed |
+
+- **Uploads:** Local files go to `server/uploads/` (or `UPLOAD_DIR`). Static serving uses `server/uploads`; run the API from `server/` so paths match.
+- **Supabase:** Use **`resumes`** bucket for resume uploads. PDF and Word (`.pdf`, `.doc`, `.docx`) allowed, max 5MB.
 
 ## 🧪 Testing
 

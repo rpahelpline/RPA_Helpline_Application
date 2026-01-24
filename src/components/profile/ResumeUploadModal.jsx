@@ -23,10 +23,10 @@ export const ResumeUploadModal = ({ isOpen, onClose, profile, onSave }) => {
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'application/msword', 
+    const allowedTypes = ['application/pdf', 'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Please upload a PDF or Word document');
+      toast.error('Please upload a PDF or Word document (.pdf, .doc, .docx)');
       return;
     }
 
@@ -37,19 +37,32 @@ export const ResumeUploadModal = ({ isOpen, onClose, profile, onSave }) => {
     }
 
     setUploading(true);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
     try {
-      // Use Supabase Storage for resumes to get proper public URLs
-      const response = await uploadApi.uploadToSupabase('resumes', file);
-      const resumeUrl = response.file.url;
-      
-      // Update profile with resume URL
+      let resumeUrl;
+      try {
+        const response = await uploadApi.uploadToSupabase('resumes', file);
+        resumeUrl = response?.file?.url ?? response?.url;
+      } catch (uploadErr) {
+        console.warn('Supabase resume upload failed, trying local upload:', uploadErr);
+        const local = await uploadApi.uploadFile('resume', file);
+        const path = local?.file?.url ?? local?.url ?? '';
+        const origin = (typeof window !== 'undefined' && window.location?.origin) || '';
+        resumeUrl = path.startsWith('http') ? path : `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
+      }
+
+      if (!resumeUrl) {
+        throw new Error('No resume URL returned from upload');
+      }
+
       await profileApi.updateProfile({ resume_url: resumeUrl });
       setCurrentResume(resumeUrl);
       toast.success('Resume uploaded successfully');
-      onSave();
+      onSave?.();
     } catch (error) {
       console.error('Failed to upload resume:', error);
-      toast.error(error.error || 'Failed to upload resume');
+      toast.error(error?.error || error?.message || 'Failed to upload resume');
     } finally {
       setUploading(false);
     }
@@ -64,10 +77,10 @@ export const ResumeUploadModal = ({ isOpen, onClose, profile, onSave }) => {
       await profileApi.updateProfile({ resume_url: null });
       setCurrentResume(null);
       toast.success('Resume removed successfully');
-      onSave();
+      onSave?.();
     } catch (error) {
       console.error('Failed to remove resume:', error);
-      toast.error(error.error || 'Failed to remove resume');
+      toast.error(error?.error || error?.message || 'Failed to remove resume');
     }
   };
 

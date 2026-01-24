@@ -12,8 +12,9 @@ import { useToast } from '../../hooks/useToast';
 import {
   AlertCircle, CheckCircle2, ShieldCheck, Users, Briefcase, ClipboardList, Globe2,
   Edit2, Trash2, X, Search, Filter, GraduationCap, MessageSquare, BarChart3,
-  Eye, TrendingUp, FileText, Calendar, DollarSign, MapPin
+  Eye, TrendingUp, FileText, Calendar, DollarSign, MapPin, ExternalLink, Download
 } from 'lucide-react';
+import { ResumeViewer } from '../../components/profile/ResumeViewer';
 
 // Error Banner
 const ErrorBanner = ({ message, onDismiss }) => {
@@ -146,6 +147,14 @@ export const AdminDashboard = memo(() => {
   const [trainingPagination, setTrainingPagination] = useState(null);
   const [trainingLoading, setTrainingLoading] = useState(false);
 
+  // Job Applications (admin)
+  const [applications, setApplications] = useState([]);
+  const [applicationsPage, setApplicationsPage] = useState(1);
+  const [applicationsPagination, setApplicationsPagination] = useState(null);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [applicationsStatusFilter, setApplicationsStatusFilter] = useState('');
+  const [viewingResume, setViewingResume] = useState(null);
+
   // Load Stats
   const loadStats = useCallback(async () => {
     try {
@@ -220,6 +229,25 @@ export const AdminDashboard = memo(() => {
     }
   }, [jobPage, jobSearch, jobStatusFilter]);
 
+  const loadApplications = useCallback(async () => {
+    setApplicationsLoading(true);
+    try {
+      const params = {
+        page: applicationsPage,
+        limit: 15,
+        ...(applicationsStatusFilter && { status: applicationsStatusFilter }),
+      };
+      const res = await adminApi.getApplications(params);
+      setApplications(res.applications || []);
+      setApplicationsPagination(res.pagination || null);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'Failed to load applications';
+      setError(message);
+    } finally {
+      setApplicationsLoading(false);
+    }
+  }, [applicationsPage, applicationsStatusFilter]);
+
   // Load Verification Requests
   const loadVerificationRequests = useCallback(async () => {
     setVerificationLoading(true);
@@ -270,6 +298,8 @@ export const AdminDashboard = memo(() => {
           await loadProjects();
         } else if (activeTab === 'jobs') {
           await loadJobs();
+        } else if (activeTab === 'applications') {
+          await loadApplications();
         } else if (activeTab === 'verification') {
           await loadVerificationRequests();
         } else if (activeTab === 'training') {
@@ -292,7 +322,7 @@ export const AdminDashboard = memo(() => {
       }
     };
     init();
-  }, [activeTab, loadStats, loadUsers, loadProjects, loadJobs, loadVerificationRequests, loadTraining]);
+  }, [activeTab, loadStats, loadUsers, loadProjects, loadJobs, loadApplications, loadVerificationRequests, loadTraining]);
 
   // Reload when filters change
   useEffect(() => {
@@ -312,6 +342,12 @@ export const AdminDashboard = memo(() => {
       loadJobs();
     }
   }, [jobPage, jobSearch, jobStatusFilter, activeTab, loading, loadJobs]);
+
+  useEffect(() => {
+    if (activeTab === 'applications' && !loading) {
+      loadApplications();
+    }
+  }, [applicationsPage, applicationsStatusFilter, activeTab, loading, loadApplications]);
 
   // User Handlers
   const handleEditUser = (user) => {
@@ -1132,6 +1168,164 @@ export const AdminDashboard = memo(() => {
     </Card>
   );
 
+  const renderApplications = () => (
+    <Card className="tech-panel border-border bg-card/70">
+      <CardHeader>
+        <CardTitle className="text-lg font-display tracking-wider">Job Applications</CardTitle>
+        <CardDescription>View all job applications. Open resume or applicant profile from here.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <Select
+            value={applicationsStatusFilter}
+            onChange={(e) => {
+              setApplicationsPage(1);
+              setApplicationsStatusFilter(e.target.value);
+            }}
+            className="w-40"
+          >
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="shortlisted">Shortlisted</option>
+            <option value="interview">Interview</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
+          </Select>
+        </div>
+
+        <div className="overflow-x-auto rounded-lg border border-border/60 bg-background/40">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-border/60 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                <th className="px-3 py-2">Applicant</th>
+                <th className="px-3 py-2">Job</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Expected salary</th>
+                <th className="px-3 py-2">Applied</th>
+                <th className="px-3 py-2">Resume</th>
+              </tr>
+            </thead>
+            <tbody>
+              {applicationsLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-center">
+                    <LoadingSpinner />
+                  </td>
+                </tr>
+              ) : applications.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                    No applications found.
+                  </td>
+                </tr>
+              ) : (
+                applications.map((app) => (
+                  <tr key={app.id} className="border-b border-border/60">
+                    <td className="px-3 py-2">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground">
+                          {app.applicant?.full_name || app.applicant?.display_name || '—'}
+                        </span>
+                        {app.applicant?.headline && (
+                          <span className="text-xs text-muted-foreground line-clamp-1">{app.applicant.headline}</span>
+                        )}
+                        {app.applicant?.id && (
+                          <a
+                            href={`/profile/${app.applicant.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-primary hover:underline mt-0.5"
+                          >
+                            View profile →
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {app.job?.title || '—'}
+                    </td>
+                    <td className="px-3 py-2">
+                      <Badge className="bg-muted text-muted-foreground border-border text-[10px] font-mono">
+                        {app.status?.toUpperCase() || '—'}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {app.expected_salary != null ? `₹${Number(app.expected_salary).toLocaleString()}` : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {formatDate(app.created_at)}
+                    </td>
+                    <td className="px-3 py-2">
+                      {app.resume_url ? (
+                        <div className="flex flex-wrap gap-1">
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="text-[10px] font-mono"
+                            onClick={() => setViewingResume(app)}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            View
+                          </Button>
+                          <a
+                            href={app.resume_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" /> Open
+                          </a>
+                          <a
+                            href={app.resume_url}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+                          >
+                            <Download className="h-3 w-3" /> Download
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No resume</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {applicationsPagination && applicationsPagination.totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2 text-xs font-mono text-muted-foreground">
+            <span>
+              Page {applicationsPagination.page} of {applicationsPagination.totalPages} ({applicationsPagination.total} total)
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={applicationsPagination.page <= 1}
+                onClick={() => setApplicationsPage((p) => Math.max(1, p - 1))}
+              >
+                Prev
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={applicationsPagination.page >= applicationsPagination.totalPages}
+                onClick={() => setApplicationsPage((p) => Math.min(applicationsPagination.totalPages, p + 1))}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   // Render Verification Tab
   const renderVerification = () => (
     <Card className="tech-panel border-border bg-card/70">
@@ -1367,6 +1561,13 @@ export const AdminDashboard = memo(() => {
             Jobs
           </TabButton>
           <TabButton
+            active={activeTab === 'applications'}
+            onClick={() => setActiveTab('applications')}
+            icon={FileText}
+          >
+            Applications
+          </TabButton>
+          <TabButton
             active={activeTab === 'verification'}
             onClick={() => setActiveTab('verification')}
             icon={ShieldCheck}
@@ -1388,6 +1589,7 @@ export const AdminDashboard = memo(() => {
           {activeTab === 'users' && renderUsers()}
           {activeTab === 'projects' && renderProjects()}
           {activeTab === 'jobs' && renderJobs()}
+          {activeTab === 'applications' && renderApplications()}
           {activeTab === 'verification' && renderVerification()}
           {activeTab === 'training' && renderTraining()}
         </div>
@@ -1661,6 +1863,13 @@ export const AdminDashboard = memo(() => {
           }}
           title={`Delete ${deleteConfirm.type?.charAt(0).toUpperCase() + deleteConfirm.type?.slice(1)}`}
           itemName={deleteConfirm.name}
+        />
+
+        <ResumeViewer
+          isOpen={!!viewingResume}
+          onClose={() => setViewingResume(null)}
+          resumeUrl={viewingResume?.resume_url}
+          fileName={viewingResume?.applicant ? `resume-${(viewingResume.applicant.full_name || viewingResume.applicant.display_name || 'applicant').replace(/\s+/g, '-')}.pdf` : 'resume.pdf'}
         />
       </div>
     </div>

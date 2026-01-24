@@ -1,6 +1,6 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { jobApi, profileApi } from '../../services/api';
+import { jobApi, profileApi, uploadApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../hooks/useToast';
 import { Container } from '../../components/layout/Container';
@@ -16,7 +16,7 @@ import { JobApplicationsManager } from '../../components/applications/JobApplica
 import {
   ArrowLeft, MapPin, Building2, Clock, DollarSign, Briefcase,
   CheckCircle, Calendar, Users, Mail, MessageSquare, Globe,
-  ExternalLink, Loader2, FileText
+  ExternalLink, Loader2, FileText, Upload, X
 } from 'lucide-react';
 
 export const JobDetail = memo(() => {
@@ -38,6 +38,9 @@ export const JobDetail = memo(() => {
   });
   const [userResume, setUserResume] = useState(null);
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [uploadedResumeName, setUploadedResumeName] = useState(null);
+  const applyResumeInputRef = useRef(null);
 
   useEffect(() => {
     const loadJob = async () => {
@@ -75,6 +78,55 @@ export const JobDetail = memo(() => {
     };
     loadUserResume();
   }, [isAuthenticated]);
+
+  const handleResumeUpload = async (e) => {
+    const file = e?.target?.files?.[0];
+    if (!file) return;
+    const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowed.includes(file.type)) {
+      toast.error('Please upload a PDF or Word document (.pdf, .doc, .docx)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+    setUploadingResume(true);
+    if (applyResumeInputRef.current) applyResumeInputRef.current.value = '';
+    try {
+      let url;
+      try {
+        const res = await uploadApi.uploadToSupabase('resumes', file);
+        url = res?.file?.url ?? res?.url;
+      } catch (supabaseErr) {
+        const local = await uploadApi.uploadFile('resume', file);
+        const path = local?.file?.url ?? local?.url ?? '';
+        const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+        url = path.startsWith('http') ? path : `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
+      }
+      if (!url) throw new Error('No resume URL returned');
+      setApplicationData(prev => ({ ...prev, resume_url: url }));
+      setUploadedResumeName(file.name);
+      toast.success('Resume uploaded');
+    } catch (err) {
+      console.error('Resume upload failed:', err);
+      toast.error(err?.error || err?.message || 'Failed to upload resume');
+    } finally {
+      setUploadingResume(false);
+    }
+  };
+
+  const useProfileResume = () => {
+    if (userResume) {
+      setApplicationData(prev => ({ ...prev, resume_url: userResume }));
+      setUploadedResumeName(null);
+    }
+  };
+
+  const clearResume = () => {
+    setApplicationData(prev => ({ ...prev, resume_url: '' }));
+    setUploadedResumeName(null);
+  };
 
   const handleApply = async () => {
     if (!isAuthenticated) {
@@ -369,16 +421,100 @@ export const JobDetail = memo(() => {
                       />
                     </div>
 
-                    {userResume && (
-                      <div className="p-2.5 md:p-3 rounded-lg bg-muted/50">
-                        <div className="flex items-center gap-2 text-xs md:text-sm">
-                          <FileText className="w-3.5 h-3.5 md:w-4 md:h-4 text-secondary flex-shrink-0" />
-                          <span className="text-muted-foreground">Resume:</span>
-                          <span className="text-foreground truncate">Using your profile resume</span>
-                          <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-500 ml-auto flex-shrink-0" />
-                        </div>
+                    <div>
+                      <Label className="text-xs md:text-sm mb-1.5 block">RESUME (Optional)</Label>
+                      <div className="space-y-2">
+                        <input
+                          ref={applyResumeInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleResumeUpload}
+                          className="hidden"
+                        />
+                        {applicationData.resume_url ? (
+                          <div className="p-2.5 md:p-3 rounded-lg bg-muted/50 flex flex-wrap items-center gap-2">
+                            <FileText className="w-4 h-4 text-secondary flex-shrink-0" />
+                            <span className="text-foreground truncate text-sm">
+                              {uploadedResumeName ? `Uploaded: ${uploadedResumeName}` : 'Using profile resume'}
+                            </span>
+                            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            <a
+                              href={applicationData.resume_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline ml-auto"
+                            >
+                              View
+                            </a>
+                            <div className="flex gap-1 w-full sm:w-auto flex-wrap">
+                              {userResume && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="font-mono text-xs"
+                                  onClick={useProfileResume}
+                                >
+                                  Use profile
+                                </Button>
+                              )}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="font-mono text-xs"
+                                disabled={uploadingResume}
+                                onClick={() => applyResumeInputRef.current?.click()}
+                              >
+                                {uploadingResume ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+                                {uploadingResume ? 'Uploading...' : 'Upload different'}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="font-mono text-xs text-red-500 hover:text-red-600"
+                                onClick={clearResume}
+                              >
+                                <X className="w-3.5 h-3.5 mr-1" />
+                                Clear
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {userResume && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="font-mono text-xs"
+                                onClick={useProfileResume}
+                              >
+                                <FileText className="w-3.5 h-3.5 mr-1" />
+                                Use profile resume
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="font-mono text-xs"
+                              disabled={uploadingResume}
+                              onClick={() => applyResumeInputRef.current?.click()}
+                            >
+                              {uploadingResume ? (
+                                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                              ) : (
+                                <Upload className="w-3.5 h-3.5 mr-1" />
+                              )}
+                              {uploadingResume ? 'Uploading...' : 'Upload resume'}
+                            </Button>
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">PDF or Word, max 5MB. You can use your profile resume or upload one for this application.</p>
                       </div>
-                    )}
+                    </div>
 
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button

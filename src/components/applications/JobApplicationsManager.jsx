@@ -4,12 +4,13 @@ import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import { ResumeViewer } from '../profile/ResumeViewer';
 import { jobApi } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 import {
-  Users, Filter, CheckCircle, XCircle, Eye, Clock, 
+  Users, Filter, CheckCircle, XCircle, Eye, Clock,
   Calendar, DollarSign, FileText, User, ArrowRight,
-  MessageSquare, ExternalLink
+  MessageSquare, ExternalLink, Download
 } from 'lucide-react';
 
 export const JobApplicationsManager = memo(({ jobId, onClose }) => {
@@ -19,6 +20,7 @@ export const JobApplicationsManager = memo(({ jobId, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [viewingResume, setViewingResume] = useState(null);
 
   useEffect(() => {
     loadApplications();
@@ -192,23 +194,50 @@ export const JobApplicationsManager = memo(({ jobId, onClose }) => {
                             Expected: ₹{typeof application.expected_salary === 'number' ? application.expected_salary.toLocaleString() : application.expected_salary}/year
                           </span>
                         )}
-                        {application.resume_url && (
-                          <a
-                            href={application.resume_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-primary hover:underline"
-                          >
-                            <FileText className="w-3 h-3" />
-                            View Resume
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
                         {application.created_at && (
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             Applied: {new Date(application.created_at).toLocaleDateString()}
                           </span>
+                        )}
+                      </div>
+
+                      {/* Resume block - prominent for hiring */}
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-xs font-mono text-muted-foreground mb-2">RESUME</p>
+                        {application.resume_url ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="font-mono text-xs"
+                              onClick={() => setViewingResume(application)}
+                            >
+                              <Eye className="w-3.5 h-3.5 mr-1" />
+                              View
+                            </Button>
+                            <a
+                              href={application.resume_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              Open in new tab
+                            </a>
+                            <a
+                              href={application.resume_url}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Download
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">No resume provided</p>
                         )}
                       </div>
                     </div>
@@ -348,13 +377,20 @@ export const JobApplicationsManager = memo(({ jobId, onClose }) => {
               {statusFilter === 'all' ? 'No Applications Yet' : `No ${statusFilter} Applications`}
             </h3>
             <p className="text-muted-foreground">
-              {statusFilter === 'all' 
+              {statusFilter === 'all'
                 ? 'Applications will appear here when candidates apply to this job'
                 : `No applications with status "${statusFilter}" found`}
             </p>
           </CardContent>
         </Card>
       )}
+
+      <ResumeViewer
+        isOpen={!!viewingResume}
+        onClose={() => setViewingResume(null)}
+        resumeUrl={viewingResume?.resume_url}
+        fileName={viewingResume?.applicant ? `resume-${viewingResume.applicant.full_name || viewingResume.applicant.display_name || 'applicant'}.pdf` : 'resume.pdf'}
+      />
     </div>
   );
 });

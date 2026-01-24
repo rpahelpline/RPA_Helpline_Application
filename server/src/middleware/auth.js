@@ -142,9 +142,7 @@ export const requireAdmin = async (req, res, next) => {
         error: 'Admin access required',
         message: 'This action requires administrator privileges'
       });
-    }
-
-    next();
+    }    next();
   } catch (error) {
     console.error('Admin check error:', error);
     return res.status(500).json({ error: 'Failed to verify admin status' });

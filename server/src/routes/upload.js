@@ -1,17 +1,21 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { supabaseAdmin } from '../config/supabase.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const defaultUploadDir = path.join(__dirname, '../../uploads');
 
 const router = express.Router();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, process.env.UPLOAD_DIR || './uploads');
+    cb(null, process.env.UPLOAD_DIR || defaultUploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueId = uuidv4();
